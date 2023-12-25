@@ -10,9 +10,17 @@ there will be no existing kubernetes cluster in the server
 
 ## Installation
 
+Expecting git is alredy availble
+
+otherwise isnatll git
+
+```bash
+sudo apt install git
+```
+
 ```bash
 git clone https://github.com/i-k8s/installer.git
-
+cd installer
 sudo chmod +x install.py
 
 sudo ./install.py

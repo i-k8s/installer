@@ -333,17 +333,12 @@ def install_containerd():
         # Restart containerd
         # Enable containerd
         # Check containerd status
-        output, error = execute_command("curl -fsSLo containerd-config.toml \
-  https://gist.githubusercontent.com/oradwell/31ef858de3ca43addef68ff971f459c2/raw/5099df007eb717a11825c3890a0517892fa12dbf/containerd-config.toml")
         execute_command("sudo mkdir -p /etc/containerd")
         execute_command(
-            "sudo mv containerd-config.toml /etc/containerd/config.toml")
-        execute_command("curl -fsSLo containerd-1.6.14-linux-amd64.tar.gz \
-  https://github.com/containerd/containerd/releases/download/v1.6.14/containerd-1.6.14-linux-amd64.tar.gz")
+            "sudo cp containerd-config.toml /etc/containerd/config.toml")
         execute_command(
             "sudo tar Cxzvf /usr/local containerd-1.6.14-linux-amd64.tar.gz")
-        execute_command("sudo curl -fsSLo /etc/systemd/system/containerd.service \
-  https://raw.githubusercontent.com/containerd/containerd/main/containerd.service")
+        execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
         execute_command("sleep 60")
         execute_command("sudo systemctl enable containerd")
@@ -359,8 +354,6 @@ def install_containerd():
     
     output, error = execute_command("which runc")
     if output=="":
-        execute_command("curl -fsSLo runc.amd64 \
-  https://github.com/opencontainers/runc/releases/download/v1.1.3/runc.amd64")
         execute_command("sudo install -m 755 runc.amd64 /usr/local/sbin/runc")
     else:
         print("runc already installed, Please check if it is configured correctly")
