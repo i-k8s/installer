@@ -374,9 +374,11 @@ EOF""")
 # Function to install Kubernetes components
 def install_kubernetes():
     # Add Kubernetes GPG key
+    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", True)
     execute_command(
         "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
     # Add Kubernetes apt repository
+    execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", True)
     execute_command(
         "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
@@ -504,9 +506,11 @@ def create_kubernetes_cluster():
 
 def install_helm():
     # Install Helm and configure as required
+    execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", True)
     execute_command(
         "curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
     execute_command("""sudo apt-get install apt-transport-https --yes""")
+    execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", True)
     execute_command(
         """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
     execute_command("""sudo apt-get update""", True)
