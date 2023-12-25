@@ -342,7 +342,7 @@ def install_containerd():
         execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
         execute_command("sleep 60")
-        execute_command("sudo systemctl enable containerd", False)
+        execute_command("sudo systemctl enable containerd --now", False)
         execute_command("sleep 60")
         execute_command("sudo systemctl restart containerd", False)
         execute_command("sleep 60")
