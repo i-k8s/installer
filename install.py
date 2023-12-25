@@ -380,7 +380,7 @@ def install_kubernetes():
     execute_command(
         "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
-    execute_command("sudo apt-get update")
+    execute_command("sudo apt-get update", True)
     execute_command(
         "sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
     execute_command("sudo apt-mark hold kubelet kubeadm kubectl")
@@ -398,10 +398,12 @@ def install_kubernetes():
 
 def install_keepalived_haproxy():
     # Install and configure Keepalived & HAProxy on multiple master nodes if needed
+    global ha_proxy_installed
     if is_master and master_count > 1:
         ha_proxy_installed = True
+        execute_command("sudo apt update", True)
         execute_command(
-            "sudo apt update && sudo apt install -y keepalived haproxy")
+            " sudo apt install -y keepalived haproxy")
         execute_command("""cat >> /etc/keepalived/check_apiserver.sh <<EOF
 #!/bin/sh
 
@@ -507,14 +509,14 @@ def install_helm():
     execute_command("""sudo apt-get install apt-transport-https --yes""")
     execute_command(
         """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
-    execute_command("""sudo apt-get update""")
+    execute_command("""sudo apt-get update""", True)
     execute_command("""sudo apt-get install  -y helm""")
 
 
 def deploy_calico():
     execute_command(
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
-    execute_command("""helm repo update""")
+    execute_command("""helm repo update""", True)
     execute_command(
         """helm install calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
     # sleep for 2 minutes
