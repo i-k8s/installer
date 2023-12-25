@@ -1,0 +1,59 @@
+apiVersion: v2
+name: k8s
+description: A Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.16.0"
+dependencies:
+  - name: kubernetes-dashboard
+    alias: kubernetes-dashboard
+    version: 7.0.0
+    condition: kubernetes-dashboard.enabled
+  - name: kong
+    alias: kong
+    version: 10.1.3
+    condition: kong.enabled
+  - name: kong
+    alias: kong-internal
+    condition: kong-internal.enabled
+    version: "10.1.3"
+    repository: "file://./charts/kong"
+  - name: nginx-ingress-controller
+    alias: nginx-ingress-controller
+    version: 9.9.5
+    condition: nginx-ingress-controller.enabled
+  - name: nginx-ingress-controller
+    alias:  nginx-ingress-controller-internal
+    version: 9.9.5
+    condition: nginx-ingress-controller-internal.enabled
+    repository: "file://./charts/nginx-ingress-controller"
+  - name: ceph-csi-cephfs
+    condition: ceph-csi-cephfs.enabled
+    version: "1.0.0"
+  - name: ceph-csi-rbd
+    condition: ceph-csi-rbd.enabled
+    version: "1.0.0"
+  - name: nfs-server-provisioner
+    condition: nfs-server-provisioner.enabled
+    version: "1.8.0"
+  - name: pgadmin4
+    condition: pgadmin4.enabled
+    version: "1.17.3"

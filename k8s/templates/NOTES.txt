@@ -1,0 +1,15 @@
+kubectl get all -n {{ .Release.Namespace }}
+
+
+check certificate status
+
+
+kubectl get certificate -n {{ .Release.Namespace }}
+
+kubectl describe certificate NAME -n {{ .Release.Namespace }}
+
+
+
+helm get all {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}

@@ -1,0 +1,150 @@
+kubernetes-dashboard:
+  enabled: true
+  nginx-ingress:
+    enabled: false
+  cert-manager:
+    enabled: false
+  app:
+    ingress:
+      ingressClassName: priviteIngress
+      issuer: selfsigned
+      enabled: true
+      hosts:
+        - k8s-db.acix.amprajin.in
+kong:
+  enabled: true
+  replicaCount: 1
+  database: "off"
+  postgresql:
+    enabled: false
+  kong:
+    extraEnvVars:
+      - name: KONG_NGINX_WORKER_PROCESSES
+        value: "1"
+      - name: KONG_PORT_MAPS
+        value: "80:8000, 443:8443"
+      - name: KONG_NGINX_PROXY_PROXY_BUFFER_SIZE
+        value: 160k
+      - name: KONG_NGINX_PROXY_PROXY_BUFFERS
+        value: 64 160k
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.universe.tf/address-pool: ip-addres-pool
+  proxy:
+    nameOverride: kong-gateway-proxy
+  deployment:
+    kong:
+      enabled: true
+  admin:
+    enabled: false
+    type: LoadBalancer
+    clusterIP: None
+  ingressController:
+    enabled: true
+    ingressClass: publicIngress
+    livenessProbe: 
+      enabled: false
+    readinessProbe:
+      enabled: false
+kong-internal:
+  enabled: true
+  replicaCount: 1
+  database: "off"
+  postgresql:
+    enabled: false
+  kong:
+    extraEnvVars:
+      - name: KONG_NGINX_WORKER_PROCESSES
+        value: "1"
+      - name: KONG_PORT_MAPS
+        value: "80:8000, 443:8443"
+      - name: KONG_NGINX_PROXY_PROXY_BUFFER_SIZE
+        value: 160k
+      - name: KONG_NGINX_PROXY_PROXY_BUFFERS
+        value: 64 160k
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.universe.tf/address-pool: ip-addres-pool
+  proxy:
+    nameOverride: kong-gateway-proxy
+  deployment:
+    kong:
+      enabled: true
+  admin:
+    enabled: false
+    type: LoadBalancer
+    clusterIP: None
+  ingressController:
+    enabled: true
+    ingressClass: priviteIngress
+    livenessProbe: 
+      enabled: false
+    readinessProbe:
+      enabled: false
+# incomplete configuration
+nginx-ingress-controller:
+  enabled: false
+  ingressClassResource:
+    name: publicIngress
+nginx-ingress-controller-internal:
+  enabled: false
+  ingressClassResource:
+    name: priviteIngress
+ceph-csi-cephfs:
+  enabled: false
+  csiConfig:
+    - clusterID: "<cluster-id>"
+      monitors:
+        - "<MONValue1>"
+        - "<MONValue2>"
+      cephFS:
+        subvolumeGroup: "csi"
+        netNamespaceFilePath: "{{ .kubeletDir }}/plugins/{{ .driverName }}/net"
+  storageClass:
+    create: true
+    name: csi-fs-sc
+    fsName: myfs
+  secret:
+    create: true
+    annotations: {}
+    # Key values correspond to a user name and its key, as defined in the
+    # ceph cluster. User ID should have required access to the 'pool'
+    # specified in the storage class
+    adminID: <plaintext ID>
+    adminKey: <Ceph auth key corresponding to ID above>
+ceph-csi-rbd:
+  enabled: false
+  csiConfig:
+    - clusterID: "<cluster-id>"
+      monitors:
+        - "<MONValue1>"
+        - "<MONValue2>"
+      rbd:
+        netNamespaceFilePath: "{{ .kubeletDir }}/plugins/{{ .driverName }}/net"
+      readAffinity:
+        enabled: true
+        crushLocationLabels:
+          - topology.kubernetes.io/region
+          - topology.kubernetes.io/zone
+  storageClass:
+    create: true
+    name: csi-rbd-sc
+  secret:
+    create: true
+    annotations: {}
+    # Key values correspond to a user name and its key, as defined in the
+    # ceph cluster. User ID should have required access to the 'pool'
+    # specified in the storage class
+    userID: <plaintext ID>
+    userKey: <Ceph auth key corresponding to userID above>
+nfs-server-provisioner:
+  enabled: true
+  storageClass:
+    create: true
+    defaultClass: true
+    parameters:
+      server: nfs-server.example.com
+      path: /share
+      readOnly: "false"

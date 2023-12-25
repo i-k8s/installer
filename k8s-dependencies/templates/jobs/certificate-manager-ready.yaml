@@ -1,0 +1,28 @@
+{{- if .Values.metallb.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "k8s-dependencies.fullname" . }}-cert-manager-ready"
+  labels:
+    {{- include "k8s-dependencies.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "post-install,post-upgrade"
+    "helm.sh/hook-weight": "4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-completed
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      serviceAccountName: admin-user
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: check-metallb-service
+        image: {{.Values.imageRegistry}}/bitnami/kubectl
+        command: ["/bin/bash", "-c", "until kubectl get mutatingwebhookconfigurations; do echo 'Waiting for MetalLB controller to become ready'; sleep 10; done; echo 'MetalLB controller is ready';  sleep 10 "]
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 0
+  backoffLimit: 3
+  completions: 1
+  parallelism: 1
+  {{- end }}
