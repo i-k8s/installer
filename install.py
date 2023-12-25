@@ -58,7 +58,7 @@ def validate_iprange(iprange):
             return True
     
     return False
-def execute_command(command):
+def execute_command(command,exit_on_error=True):
     """Executes a shell command and returns the output and error."""
     print("\n\nExecuting command: {}".format(command))
     print("\nPlease wait...\n")
@@ -73,7 +73,8 @@ def execute_command(command):
     if error:
         print("error occured stopping")
         print(error)
-        exit(1)
+        if exit_on_error:
+            exit(1)
     return output, error
 
 
@@ -341,9 +342,9 @@ def install_containerd():
         execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
         execute_command("sleep 60")
-        execute_command("sudo systemctl enable containerd")
+        execute_command("sudo systemctl enable containerd", False)
         execute_command("sleep 60")
-        execute_command("sudo systemctl restart containerd")
+        execute_command("sudo systemctl restart containerd", False)
         execute_command("sleep 60")
         execute_command("sudo systemctl status containerd")
 
