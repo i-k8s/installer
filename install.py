@@ -672,7 +672,7 @@ def install_k8s():
 
     output, error = execute_command(command)
 
-    execute_command("sleep 600")
+    execute_command("sleep 10")
     use_public_ip_for_dashboard = input(
         "Do you want to use public IP for dashboard? (y/n): ")
     use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
