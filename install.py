@@ -653,12 +653,12 @@ def deploy_calico():
 
 def check_status():
     # Check if all the pods are running
-    execute_command("kubectl get pods --all-namespaces", False)
+    execute_command("kubectl get pods --all-namespaces", False,max_retries=1)
     # Check if all the nodes are ready
-    execute_command("kubectl get nodes", False)
+    execute_command("kubectl get nodes", False,max_retries=1)
     # Check if the cluster is ready
-    execute_command("kubectl get cs", False)
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n kube-system", False)
+    execute_command("kubectl get cs", False,max_retries=1)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n kube-system", False,timeout_seconds=None)
     print("pods status after waiting")
     execute_command("kubectl get pods --all-namespaces")
 
@@ -677,7 +677,7 @@ def install_k8s(re_install_dependencies=False):
         if docker_registry:
             command = command + " --set imageRegistry={}".format(docker_registry)
 
-        output, error = execute_command(command)
+        output, error = execute_command(command,timeout_seconds=None)
 
         execute_command("sleep 10")
 
@@ -720,7 +720,7 @@ def install_k8s(re_install_dependencies=False):
     
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
-    output, error = execute_command(command)
+    output, error = execute_command(command, timeout_seconds=None)
 
     print(f"""
     update the dns entries in your dns server
