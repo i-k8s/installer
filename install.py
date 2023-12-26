@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import subprocess
 import re
+import time
 
 master_ips = []
 worker_ips = []
@@ -66,23 +67,49 @@ def validate_iprange(iprange):
             return True
     
     return False
-def execute_command(command,exit_on_error=True):
+def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries=3):
     """Executes a shell command and returns the output and error."""
     print("\n\nExecuting command: {}".format(command))
     print("\nPlease wait...\n")
-    process = subprocess.Popen(
-        command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = process.communicate()
-    output = output.decode()
-    if output:
-        print("output\n")
-        print(output)
-    error = error.decode()
-    if error:
-        print("error occured stopping")
-        print(error)
-        if exit_on_error:
-            exit(1)
+
+    retries = 0
+    output = ""
+    error = ""
+
+    while retries < max_retries:
+        try:
+            process = subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            try:
+                output, error = process.communicate(timeout=timeout_seconds)
+                output = output.decode()
+                error = error.decode()
+
+                if output:
+                    print("Output:\n")
+                    print(output)
+
+                if error:
+                    print("Error occurred:\n")
+                    print(error)
+
+
+                return output, error
+
+            except subprocess.TimeoutExpired:
+                print("Timeout occurred. Retrying...")
+                process.kill()
+                retries += 1
+
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            retries += 1
+
+        time.sleep(1)  # Add a small delay before retrying
+    print(f"Command '{command}' failed after {max_retries} retries.")
+    if exit_on_error:
+        exit(1)
     return output, error
 
 
