@@ -748,11 +748,15 @@ def install_k8s(re_install_dependencies=False):
     
     use this command to get token
 
-    kubectl create token admin --duration=720h
+    kubectl create token admin-user --duration=720h
+
+
+    kubectl create token guest-user --duration=7200h
 
 
     """)
-    output,e = execute_command("kubectl create token helm --duration=720h -n k8s", False)
+    output,e = execute_command("kubectl create token admin-user --duration=720h -n k8s", False)
+    output,e = execute_command("kubectl create token guest-user --duration=7200h -n k8s", False)
 
 
     if install_docker_registry:
