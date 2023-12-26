@@ -152,11 +152,33 @@ harbor:
   enabled: false
   ingress:
     core:
-      ingressClassName: "publicIngress"
       hostname: core.harbor.domain
       annotations:
         ingress.kubernetes.io/ssl-redirect: 'true'
         ingress.kubernetes.io/proxy-body-size: '0'
+        kubernetes.io/ingress.class: publicIngress
         cert-manager.io/cluster-issuer: cluster-issuer-public
 pgadmin4:
   enabled: false
+  persistentVolume:
+    storageClass: "nfs"
+    size: 50Gi
+  env:
+    email: admin@ik8s.com
+    password: AriY!11a#2023
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: publicIngress
+      cert-manager.io/cluster-issuer: cluster-issuer-public
+      konghq.com/strip-path: 'true'
+      konghq.com/protocols: https
+      konghq.com/https-redirect-status-code: '308'
+      konghq.com/write-timeout: '120000'
+      konghq.com/read-timeout: '120000'
+      konghq.com/connect-timeout: '120000'        
+    hosts:
+      - host: k8s-pg-admin.in
+        paths:
+          - path: /
+            pathType: Prefix

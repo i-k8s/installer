@@ -686,6 +686,29 @@ def install_k8s():
     loadbalancer_ip2[3] = str(int(loadbalancer_ip2[3]) + 1)
     loadbalancer_ip2 = ".".join(loadbalancer_ip2)
     command = command + f" --set kong-internal.service.loadBalancerIP={loadbalancer_ip2} --set kong.service.loadBalancerIP={loadbalancer_ip1}"
+    if install_docker_registry:
+        command = command + " --set harbor.enabled=true"
+        command = command + " --set harbor.ingress.core.hostname={}".format(docker_registry_domain)
+        if use_public_ip_for_docker_registry:
+            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=publicIngress"
+            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
+        else:
+            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=priviteIngress"
+            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-privite"
+    if install_pg_admin:
+        command = command + " --set pgadmin4.enabled=true"
+        command = command + " --set pgadmin4.ingress.hosts[0].host={}".format(pg_admin_domain)
+        email = input("Enter the email to be used for pg admin [defult : admin@{}]: ".format(base_domain)) or "admin@{}".format(base_domain)
+        password = input("Enter the password to be used for pg admin [defult : admin]: ") or "admin"
+        command = command + f" --set pgadmin4.env.email={email}"
+        command = command + f" --set pgadmin4.env.password={password}"
+        if use_public_ip_for_dashboard:
+            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=publicIngress"
+            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
+        else:
+            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=priviteIngress"
+            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-privite"
+
     
     
     if use_public_ip_for_dashboard:
@@ -714,7 +737,28 @@ def install_k8s():
 
                                      
     kubernetes cluster is installed successfully
-    kubernetes dashboard url : https://{dashboard_domain}/""")
+    kubernetes dashboard url : https://{dashboard_domain}/
+    
+    use this command to get token
+
+    kubectl create token admin --duration=720h
+
+
+    """)
+    output,e = execute_command("kubectl create token helm --duration=720h", False)
+
+
+    if install_docker_registry:
+        print(f"""
+        docker registry url : https://{docker_registry_domain}/""")
+    if install_pg_admin:
+        print(f"""
+        pg admin url : https://{pg_admin_domain}/""")
+        print(f""" use this credentials to login to pg admin4
+        email : {email}
+        password : {password}""")
+        
+          
 
 
 
