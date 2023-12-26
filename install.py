@@ -853,6 +853,8 @@ def install_k8s():
     
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
+    else:
+        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=priviteIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-privite"
     output, error = execute_command(command, timeout_seconds=None)
 
     print(f"""
