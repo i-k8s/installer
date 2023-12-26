@@ -40,7 +40,24 @@ sudo chmod +x install.py
 sudo ./install.py
 ```
 
+### Generate SSL Certificate
 
+1. Generate a CA certificate private key.
+
+    ```sh
+    cd /home/kla/cert
+    openssl genrsa -out tls.key 4096
+    ```
+
+2. Generate the CA certificate.
+
+   also possible to use existing certificate, *it will expire in 10 years
+    ```sh
+   openssl req -x509 -new -nodes -sha512 -days 3650 \
+   -subj "/C=IN/ST=Kerala/L=Kerala/O=OpenSSL/OU=ADM/emailAddress=devops@openssl.in/CN=*.openssl.in" \
+   -key tls.key \
+   -out tls.crt
+    ```
 
 ## Helpful Commands
 

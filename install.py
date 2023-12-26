@@ -52,57 +52,6 @@ all_interfaces = []
 
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-def cert_gen(
-    emailAddress="devops@ults.in",
-    commonName="ults.in",
-    countryName="IN",
-    localityName="Calicut",
-    stateOrProvinceName="kerala",
-    organizationName="ULTS",
-    organizationUnitName="ADM",
-    serialNumber=0,
-    validityStartInSeconds=0,
-    validityEndInSeconds=10*365*24*60*60,
-    ):
-
-    from OpenSSL import crypto, SSL
-    import base64
-    #can look at generated file using openssl:
-    #openssl x509 -inform pem -in selfsigned.crt -noout -text
-    # create a key pair
-    k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, 4096)
-    # create a self-signed cert
-    cert = crypto.X509()
-    cert.get_subject().C = countryName
-    cert.get_subject().ST = stateOrProvinceName
-    cert.get_subject().L = localityName
-    cert.get_subject().O = organizationName
-    cert.get_subject().OU = organizationUnitName
-    cert.get_subject().CN = commonName
-    cert.get_subject().emailAddress = emailAddress
-    cert.set_serial_number(serialNumber)
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(validityEndInSeconds)
-    cert.set_issuer(cert.get_subject())
-    cert.set_pubkey(k)
-    cert.add_extensions([
-        crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
-        crypto.X509Extension(b"keyUsage", True, b"keyCertSign, cRLSign"),
-        crypto.X509Extension(b"subjectKeyIdentifier", False, b"hash", subject=cert),
-    ])
-    cert.add_extensions([
-        crypto.X509Extension(b"authorityKeyIdentifier", False, b"keyid:always", issuer=cert),
-    ])
-    cert.sign(k, 'sha512')
-    certficate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-    key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
-    with open(CERT_FILE, "wt") as f:
-        f.write(certficate.decode("utf-8"))
-    with open(KEY_FILE, "wt") as f:
-        f.write(key.decode("utf-8"))
-    return True
-
 
 def check_installed(name):
     import shutil
@@ -822,7 +771,8 @@ def install_k8s():
     if not use_public_ip_only:
         # check  certificate and key exists and it was modified more than 5 years ago
         if not os.path.exists(CERT_FILE) or not os.path.exists(KEY_FILE) or (time.time() - os.path.getmtime(CERT_FILE)) > 157680000:
-            cert_gen(commonName=base_domain)
+            print(" certificate and key does not exists or it was modified more than 5 years ago")
+            exit(1)
         # delete old secret
         execute_command("kubectl delete secret ca-key-pair -n k8s", False)    
         # create secret from file using kubectl
