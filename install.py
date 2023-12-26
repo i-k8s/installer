@@ -790,8 +790,7 @@ def main():
     print("Choose the options to be installed")
     print("1. From scratch")
     print("2. Resetting existing cluster")
-    print("3. setup dashboard by removing existing")
-    print("4. setup dashboard by updating existing")
+    print("3. setup dashboard by updating existing")
 
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
@@ -800,8 +799,6 @@ def main():
     elif choice == 2:
         print("Starting installation from existing cluster... resetting")
     elif choice == 3:
-        print("Starting installation from existing cluster... dashboard by removing existing")
-    elif choice == 4:
         print("Starting installation from existing cluster... dashboard by updating existing")
     else:
         print("Invalid choice")
@@ -816,7 +813,7 @@ def main():
         create_kubernetes_cluster()
         deploy_calico()
     check_status()
-    install_k8s(choice <= 3)
+    install_k8s(choice <= 2)
 
 
 if __name__ == "__main__":
