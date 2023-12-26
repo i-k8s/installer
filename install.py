@@ -93,8 +93,7 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
                 if error:
                     print("Error occurred:\n")
                     print(error)
-
-
+                    raise Exception(error)
                 return output, error
 
             except subprocess.TimeoutExpired:
@@ -109,6 +108,8 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
         time.sleep(1)  # Add a small delay before retrying
     print(f"Command '{command}' failed after {max_retries} retries.")
     if exit_on_error:
+        print("Exiting...")
+        process.kill()
         exit(1)
     return output, error
 
