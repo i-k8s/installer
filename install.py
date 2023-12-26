@@ -79,10 +79,10 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
     while retries < max_retries:
         try:
             process = subprocess.Popen(
-                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                command, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             try:
-                output, error = process.communicate(timeout=timeout_seconds)
+                output, error = process.communicate(input="y",timeout=timeout_seconds)
                 output = output.decode()
                 error = error.decode()
 
