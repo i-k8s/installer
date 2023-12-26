@@ -673,9 +673,6 @@ def install_k8s():
     output, error = execute_command(command)
 
     execute_command("sleep 10")
-    use_public_ip_for_dashboard = input(
-        "Do you want to use public IP for dashboard? (y/n): ")
-    use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
                                 --set nfs-server-provisioner.storageClass.parameters.server={} \
@@ -694,10 +691,31 @@ def install_k8s():
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
     output, error = execute_command(command)
-    if error != None:
-        print("Error installing k8s")
-        print(error)
-        exit(1)
+
+    print(f"""
+    update the dns entries in your dns server
+    1. {dashboard_domain} : {use_public_ip_for_dashboard and loadbalancer_ip1 or loadbalancer_ip2}
+    """)
+    if install_docker_registry:
+        print(f"""
+        2. {docker_registry_domain} : {use_public_ip_for_docker_registry and loadbalancer_ip1 or loadbalancer_ip2}
+        """)
+    if install_pg_admin:
+        print(f"""
+        3. {pg_admin_domain} : {use_public_ip_for_dashboard and loadbalancer_ip1 or loadbalancer_ip2}
+        """)
+    print(f"""\n
+    run the following commands in your master node to use kubectl
+
+    rm -r $HOME/.kube
+    mkdir -p $HOME/.kube
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+                                     
+    kubernetes cluster is installed successfully
+    kubernetes dashboard url : https://{dashboard_domain}/""")
+
 
 
 # Main function to orchestrate the setup process
