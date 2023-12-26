@@ -663,22 +663,23 @@ def check_status():
     execute_command("kubectl get pods --all-namespaces")
 
 
-def install_k8s():
+def install_k8s(re_install_dependencies=False):
     # delete old namespaces
     ## check if k8s namespace exists
-    output, error = execute_command("kubectl get ns k8s", False)
-    if output != "":
-        execute_command("kubectl delete ns k8s", False)
-        ## wait until k8s is deleted
-        execute_command(
-            """kubectl wait --for=delete --timeout=600s namespace/k8s""")
-    command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
-    if docker_registry:
-        command = command + " --set imageRegistry={}".format(docker_registry)
+    if re_install_dependencies:
+        output, error = execute_command("kubectl get ns k8s", False)
+        if output != "":
+            execute_command("kubectl delete ns k8s", False)
+            ## wait until k8s is deleted
+            execute_command(
+                """kubectl wait --for=delete --timeout=600s namespace/k8s""")
+        command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
+        if docker_registry:
+            command = command + " --set imageRegistry={}".format(docker_registry)
 
-    output, error = execute_command(command)
+        output, error = execute_command(command)
 
-    execute_command("sleep 10")
+        execute_command("sleep 10")
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
@@ -785,16 +786,19 @@ def main():
     print("Choose the options to be installed")
     print("1. From scratch")
     print("2. Resetting existing cluster")
-    print("3. setup dashboard")
+    print("3. setup dashboard by removing existing")
+    print("4. setup dashboard by updating existing")
 
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
     if choice == 1:
         print("Starting installation from scratch...")
     elif choice == 2:
-        print("Starting installation from existing cluster...")
+        print("Starting installation from existing cluster... resetting")
     elif choice == 3:
-        print("Starting installation from existing cluster...")
+        print("Starting installation from existing cluster... dashboard by removing existing")
+    elif choice == 4:
+        print("Starting installation from existing cluster... dashboard by updating existing")
     else:
         print("Invalid choice")
         exit(1)
@@ -808,7 +812,7 @@ def main():
         create_kubernetes_cluster()
         deploy_calico()
     check_status()
-    install_k8s()
+    install_k8s(choice == 3)
 
 
 if __name__ == "__main__":
