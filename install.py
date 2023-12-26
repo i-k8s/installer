@@ -551,6 +551,8 @@ def create_kubernetes_cluster():
     # pull images
     output = None
     error = None
+    # reset existing cluster
+    execute_command("sudo kubeadm reset -f", False)
     if (has_internet):
         output, error = execute_command(
             "sudo kubeadm config images pull --kubernetes-version=v1.25.8")
@@ -680,15 +682,30 @@ def main():
         elif i == "c":
             print("Exiting...")
             exit(1)
+    print("Starting installation...")
+    print("Choose the options to be installed")
+    print("1. From scratch")
+    print("2. Resetting existing cluster")
 
-    update_hosts_file()
-    install_containerd()
-    install_kubernetes()
-    install_keepalived_haproxy()
+    choice = input("Enter your choice [default: 1]: ") or "1"
+    choice = int(choice)
+    if choice == 1:
+        print("Starting installation from scratch...")
+    elif choice == 2:
+        print("Starting installation from existing cluster...")
+    else:
+        print("Invalid choice")
+        exit(1)
+    if choice == 1:
+        update_hosts_file()
+        install_containerd()
+        install_kubernetes()
+        install_keepalived_haproxy()
+        install_helm()
     create_kubernetes_cluster()
-    install_helm()
     deploy_calico()
     check_status()
+    install_k8s()
 
 
 if __name__ == "__main__":
