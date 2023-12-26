@@ -671,10 +671,7 @@ def install_k8s():
         command = command + " --set imageRegistry={}".format(docker_registry)
 
     output, error = execute_command(command)
-    if error != None:
-        print("Error installing k8s-dependencies")
-        print(error)
-        exit(1)
+
     execute_command("sleep 600")
     use_public_ip_for_dashboard = input(
         "Do you want to use public IP for dashboard? (y/n): ")
