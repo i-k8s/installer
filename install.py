@@ -371,7 +371,7 @@ def install_containerd():
     # Check if containerd is installed
     output, error = execute_command("which curl")
     if output == "":
-        execute_command("sudo apt install -y curl")
+        execute_command("DEBIAN_FRONTEND=noninteractive sudo apt install -y curl")
     output, error = execute_command("which containerd")
     if output == "":
         # Install containerd
@@ -386,11 +386,11 @@ def install_containerd():
             "sudo tar Cxzvf /usr/local containerd-1.6.14-linux-amd64.tar.gz")
         execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
-        execute_command("sleep 60")
+        execute_command("sleep 2")
         execute_command("sudo systemctl enable containerd --now", False)
-        execute_command("sleep 60")
+        execute_command("sleep 2")
         execute_command("sudo systemctl restart containerd", False)
-        execute_command("sleep 60")
+        execute_command("sleep 2")
         execute_command("sudo systemctl status containerd")
 
 
@@ -427,10 +427,10 @@ def install_kubernetes():
     execute_command(
         "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
-    execute_command("sudo apt-get update", True)
+    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", True)
     execute_command(
-        "sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
-    execute_command("sudo apt-mark hold kubelet kubeadm kubectl")
+        "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
+    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-mark hold kubelet kubeadm kubectl")
     # Disable swap
     execute_command("sudo swapoff -a")
     execute_command("sudo sed -i -e '/swap/d' /etc/fstab")
@@ -450,7 +450,7 @@ def install_keepalived_haproxy():
         ha_proxy_installed = True
         execute_command("sudo apt update", True)
         execute_command(
-            " sudo apt install -y keepalived haproxy")
+            "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy")
         execute_command("""cat >> /etc/keepalived/check_apiserver.sh <<EOF
 #!/bin/sh
 
@@ -554,12 +554,12 @@ def install_helm():
     execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", True)
     execute_command(
         "curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
-    execute_command("""sudo apt-get install apt-transport-https --yes""")
+    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
     execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", True)
     execute_command(
         """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
-    execute_command("""sudo apt-get update""", True)
-    execute_command("""sudo apt-get install  -y helm""")
+    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", True)
+    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install  -y helm""")
 
 
 def deploy_calico():
