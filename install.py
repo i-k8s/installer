@@ -452,22 +452,22 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF""")
     
-    execute_command("sudo sysctl --system")
+    execute_command("sudo sysctl --system", False)
     # If not installed, follow the provided steps to install containerd
 
 
 # Function to install Kubernetes components
 def install_kubernetes():
     # Add Kubernetes GPG key
-    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", True)
+    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", False)
     execute_command(
         "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
     # Add Kubernetes apt repository
-    execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", True)
+    execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", False)
     execute_command(
         "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
-    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", True)
+    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False)
     execute_command(
         "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-mark hold kubelet kubeadm kubectl")
@@ -490,7 +490,7 @@ def install_keepalived_haproxy():
     global ha_proxy_installed
     if is_master and master_count > 1:
         ha_proxy_installed = True
-        execute_command("sudo apt update", True)
+        execute_command("sudo apt update", False)
         execute_command(
             "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy")
         execute_command("""cat >> /etc/keepalived/check_apiserver.sh <<EOF
@@ -593,21 +593,21 @@ def create_kubernetes_cluster():
 
 def install_helm():
     # Install Helm and configure as required
-    execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", True)
+    execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
     execute_command(
         "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
     execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
-    execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", True)
+    execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False)
     execute_command(
         """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
-    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", True)
+    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", False)
     execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install  -y helm""")
 
 
 def deploy_calico():
     execute_command(
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
-    execute_command("""helm repo update""", True)
+    execute_command("""helm repo update""", False)
     execute_command(
         """helm install calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
     # sleep for 2 minutes
