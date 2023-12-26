@@ -635,6 +635,15 @@ def check_status():
 
 
 def install_k8s():
+    # delete old namespaces
+    ## check if k8s namespace exists
+    output, error = execute_command("kubectl get ns k8s")
+    if output != "":
+        execute_command("kubectl delete ns k8s", False)
+        ## wait until k8s is deleted
+        execute_command(
+            """kubectl wait --for=delete --timeout=600s namespace/k8s""")
+    
     output, error = execute_command(
         " helm install k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set imageRegistry={} --set ipPool={}".format(docker_registry, lbpool))
     if error != None:
@@ -686,12 +695,15 @@ def main():
     print("Choose the options to be installed")
     print("1. From scratch")
     print("2. Resetting existing cluster")
+    print("3. setup dashboard")
 
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
     if choice == 1:
         print("Starting installation from scratch...")
     elif choice == 2:
+        print("Starting installation from existing cluster...")
+    elif choice == 3:
         print("Starting installation from existing cluster...")
     else:
         print("Invalid choice")
@@ -702,8 +714,10 @@ def main():
         install_kubernetes()
         install_keepalived_haproxy()
         install_helm()
-    create_kubernetes_cluster()
-    deploy_calico()
+    if choice < 2:
+        install_helm()
+        create_kubernetes_cluster()
+        deploy_calico()
     check_status()
     install_k8s()
 
