@@ -79,10 +79,10 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
     while retries < max_retries:
         try:
             process = subprocess.Popen(
-                command, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             try:
-                output, error = process.communicate(input="y",timeout=timeout_seconds)
+                output, error = process.communicate(timeout=timeout_seconds)
                 output = output.decode()
                 error = error.decode()
 
@@ -455,7 +455,7 @@ def install_kubernetes():
     # Add Kubernetes GPG key
     execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", True)
     execute_command(
-        "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
+        "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
     # Add Kubernetes apt repository
     execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", True)
     execute_command(
@@ -589,7 +589,7 @@ def install_helm():
     # Install Helm and configure as required
     execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", True)
     execute_command(
-        "curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
+        "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
     execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
     execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", True)
     execute_command(
