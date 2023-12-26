@@ -54,7 +54,7 @@ def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 def cert_gen(
     emailAddress="devops@ults.in",
-    commonName="commonName",
+    commonName="ults.in",
     countryName="IN",
     localityName="Calicut",
     stateOrProvinceName="kerala",
@@ -86,6 +86,14 @@ def cert_gen(
     cert.gmtime_adj_notAfter(validityEndInSeconds)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
+    cert.add_extensions([
+        crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
+        crypto.X509Extension(b"keyUsage", True, b"keyCertSign, cRLSign"),
+        crypto.X509Extension(b"subjectKeyIdentifier", False, b"hash", subject=cert),
+    ])
+    cert.add_extensions([
+        crypto.X509Extension(b"authorityKeyIdentifier", False, b"keyid:always", issuer=cert),
+    ])
     cert.sign(k, 'sha512')
     certficate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
     key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
