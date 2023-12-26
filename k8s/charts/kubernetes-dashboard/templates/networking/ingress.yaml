@@ -21,7 +21,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
   annotations:
-    cert-manager.io/issuer: {{ .Values.app.ingress.issuer }}
+    cert-manager.io/cluster-issuer: {{ .Values.app.ingress.issuer }}
     kubernetes.io/ingress.class: {{ .Values.app.ingress.ingressClassName }}
     {{- if eq .Values.app.ingress.ingressClassName "nginx" }}
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
