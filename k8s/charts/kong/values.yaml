@@ -632,7 +632,7 @@ ingressController:
   ## @param ingressController.containerPorts.health Kong Ingress Controller health container port
   ##
   containerPorts:
-    health: 10254
+    health: 8000
   ## Container resource requests and limits
   ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
   ## @param ingressController.resources.limits The resources limits for the Kong Ingress Controller container

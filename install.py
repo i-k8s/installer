@@ -3,7 +3,7 @@ import subprocess
 import re
 import time
 import platform
-
+import os
 
 
 import sys
@@ -42,7 +42,8 @@ use_public_ip_for_docker_registry = False
 install_pg_admin = False
 base_domain = "ik8s.amprajin.in"
 is_windows = platform.system() == "Windows"
-
+CERT_FILE="tls.crt"
+KEY_FILE = "tls.key"
 
 all_interfaces = []
 
@@ -62,7 +63,8 @@ def cert_gen(
     serialNumber=0,
     validityStartInSeconds=0,
     validityEndInSeconds=10*365*24*60*60,
-    CERT_FILE="selfsigned.crt"):
+    ):
+
     from OpenSSL import crypto, SSL
     import base64
     #can look at generated file using openssl:
@@ -89,7 +91,9 @@ def cert_gen(
     key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
     with open(CERT_FILE, "wt") as f:
         f.write(certficate.decode("utf-8"))
-    return base64.b64encode(certficate).decode("utf-8"), base64.b64encode(key).decode("utf-8")
+    with open(KEY_FILE, "wt") as f:
+        f.write(key.decode("utf-8"))
+    return True
 
 
 def check_installed(name):
@@ -808,11 +812,13 @@ def install_k8s():
             command = command + " --set kong.ingressController.ingressClass=priviteIngress"
     
     if not use_public_ip_only:
-        cert,key = cert_gen(commonName=base_domain)
-        print("cert : ",cert)
-        print("key : ",key)
-        command = command + " --set tls.cert={}".format(cert)
-        command = command + " --set tls.key={}".format(key)
+        # check  certificate and key exists and it was modified more than 5 years ago
+        if not os.path.exists(CERT_FILE) or not os.path.exists(KEY_FILE) or (time.time() - os.path.getmtime(CERT_FILE)) > 157680000:
+            cert_gen(commonName=base_domain)
+        # delete old secret
+        execute_command("kubectl delete secret ca-key-pair -n k8s", False)    
+        # create secret from file using kubectl
+        execute_command("kubectl create secret tls ca-key-pair --cert={} --key={} -n k8s".format(CERT_FILE, KEY_FILE), False)
 
     loadbalancer_ip1 = lbpool.count("-") == 1 and lbpool.split("-")[0] or lbpool.split("/")[0]
     # find the next ip  after loadbalancer_ip1

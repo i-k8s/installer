@@ -24,15 +24,6 @@ spec:
           ingress:
             class: publicIngress
 ---
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ca-key-pair
-data:
-  tls.crt: {{ .Values.tls.crt }}
-  tls.key: {{ .Values.tls.key }}
----
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
