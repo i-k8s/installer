@@ -569,6 +569,12 @@ def create_kubernetes_cluster():
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint \"master.in:8443\""
             output, error = execute_command(command)
+                # Configure kubectl
+            # delete old config
+            execute_command("rm -rf $HOME/.kube", False)
+            execute_command("mkdir -p $HOME/.kube")
+            execute_command("sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config")
+            execute_command("sudo chown $(id -u):$(id -g) $HOME/.kube/config")
             if single_node:
                 execute_command(
                     "kubectl taint nodes --all node-role.kubernetes.io/master-")
@@ -580,13 +586,13 @@ def create_kubernetes_cluster():
     else:
         join_command = input("Enter the join command: ")
         output, error = execute_command(join_command)
-
     # Configure kubectl
     # delete old config
-    execute_command("rm -rf $HOME/.kube")
+    execute_command("rm -rf $HOME/.kube", False)
     execute_command("mkdir -p $HOME/.kube")
     execute_command("sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config")
     execute_command("sudo chown $(id -u):$(id -g) $HOME/.kube/config")
+
 
 # Function to install Helm
 
