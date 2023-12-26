@@ -752,7 +752,7 @@ def install_k8s(re_install_dependencies=False):
 
 
     """)
-    output,e = execute_command("kubectl create token helm --duration=720h", False)
+    output,e = execute_command("kubectl create token helm --duration=720h -n k8s", False)
 
 
     if install_docker_registry:
