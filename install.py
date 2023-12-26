@@ -33,6 +33,7 @@ use_public_ip_for_dashboard = False
 install_docker_registry = False
 use_public_ip_for_docker_registry = False
 install_pg_admin = False
+base_domain = "ik8s.amprajin.in"
 
 
 all_interfaces = []
@@ -177,9 +178,12 @@ def collect_node_info():
     global ceph_key
     global nfs_server
     global nfs_path
+    global all_interfaces
+    global base_domain
 
     global interface
     while interface == "":
+        base_domain = input("Enter the base domain to be used [defult : {}] : ".format(base_domain)) or base_domain
         interface = get_lan_interface_name()
         print("LAN interface is {} is this correct (y/n) [default: y] ?:".format(interface))
         if (input() or "y") == "n":
@@ -258,7 +262,7 @@ def collect_node_info():
         install_docker_registry = input("Do you want to install harbor docker registry? (y/n) [defult: n] : ") or "n"
         install_docker_registry = install_docker_registry == "y"
         if install_docker_registry:
-            docker_registry_domain = input("Enter the docker registry domain to be used: ")
+            docker_registry_domain = input("Enter the docker registry domain to be used [defult : harbor.{}]: ".format(base_domain)) or "harbor.{}".format(base_domain)
             docker_registry = docker_registry_domain + "/library/"
             docker_registry_ip = None
         else:
@@ -297,7 +301,7 @@ def collect_node_info():
         nfs_path = input("Enter the NFS path defult[/]:") or "/"
 
 
-    use_public_ip_only = input("Do you want to use public IP only? (y/n) [defult: n] : ") or "n"
+    use_public_ip_only = input("Do you want to use public IP only? (y/n) [defult: y] : ") or "y"
     use_public_ip_only = use_public_ip_only == "y"
     if use_public_ip_only:
         use_public_ip_for_dashboard = True
@@ -311,11 +315,11 @@ def collect_node_info():
 
 
     
-    dashboard_domain = input("Enter the dashboard domain to be used: ")
+    dashboard_domain = input("Enter the dashboard domain to be used [defult : k8sdb.{}]: ".format(base_domain)) or "k8sdb.{}".format(base_domain)
     install_pg_admin = input("Do you want to install pg admin? (y/n) [defult: n] : ") or "n"
     install_pg_admin = install_pg_admin == "y"
     if install_pg_admin:
-        pg_admin_domain = input("Enter the pg admin domain to be used: ")
+        pg_admin_domain = input("Enter the pg admin domain to be used [defult : pgadmin.{}]: ".format(base_domain)) or "pgadmin.{}".format(base_domain)
 
 
 def print_node_info():
