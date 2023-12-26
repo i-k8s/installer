@@ -621,8 +621,11 @@ def deploy_calico():
     # sleep for 2 minutes
     execute_command("""sleep 120""")
     # wait until calico is deployed
-    execute_command(
-        """kubectl wait --for=condition=Available --timeout=600s deployment/calico-kube-controllers -n tigera-operator""")
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator")
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver")
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system")
+
+
 
 
 def check_status():
@@ -632,6 +635,9 @@ def check_status():
     execute_command("kubectl get nodes")
     # Check if the cluster is ready
     execute_command("kubectl get cs")
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n kube-system", False)
+    print("pods status after waiting")
+    execute_command("kubectl get pods --all-namespaces")
 
 
 def install_k8s():
