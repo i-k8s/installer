@@ -305,9 +305,11 @@ def collect_node_info():
             if not validate_ipv4(vip):
                 print("Invalid ip please enter correct VIP virtual ip, IPv4 :")
                 vip = ""
-
+    poolstart = ip.split(".")
+    poolstart[3] = str(100)
+    poolstart = ".".join(poolstart)
     while lbpool=="":
-        lbpool = input(f"Enter the load balancer pool to be used [defult : {ip}/24] : ") or f"{ip}/24"
+        lbpool = input(f"Enter the load balancer pool to be used [defult : {poolstart}/30] : ") or f"{poolstart}/30"
         if not validate_iprange(lbpool):
             lbpool = ""
             print ("invalid ip range use format  192.168.10.0/24 or 192.168.9.1-192.168.9.5")
