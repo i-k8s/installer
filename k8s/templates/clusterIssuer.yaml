@@ -29,10 +29,9 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ca-key-pair
-  namespace: sandbox
 data:
-  tls.crt: {{ .Values.tls.crt | b64encode }}
-  tls.key: {{ .Values.tls.key | b64encode }}
+  tls.crt: {{ .Values.tls.crt }}
+  tls.key: {{ .Values.tls.key }}
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer

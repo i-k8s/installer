@@ -64,6 +64,7 @@ def cert_gen(
     validityEndInSeconds=10*365*24*60*60,
     CERT_FILE="selfsigned.crt"):
     from OpenSSL import crypto, SSL
+    import base64
     #can look at generated file using openssl:
     #openssl x509 -inform pem -in selfsigned.crt -noout -text
     # create a key pair
@@ -84,11 +85,11 @@ def cert_gen(
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
     cert.sign(k, 'sha512')
-    certficate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("utf-8")
-    key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k).decode("utf-8")
+    certficate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+    key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
     with open(CERT_FILE, "wt") as f:
-        f.write(certficate)
-    return certficate, key
+        f.write(certficate.decode("utf-8"))
+    return base64.b64encode(certficate).decode("utf-8"), base64.b64encode(key).decode("utf-8")
 
 
 def check_installed(name):
@@ -284,6 +285,9 @@ def collect_node_info():
     global nfs_path
     global all_interfaces
     global base_domain
+    global use_privite_ip_only
+    global is_windows
+    
 
     global interface
     while interface == "":
@@ -382,9 +386,12 @@ def collect_node_info():
             if not validate_ipv4(vip):
                 print("Invalid ip please enter correct VIP virtual ip, IPv4 :")
                 vip = ""
-    poolstart = ip.split(".")
-    poolstart[3] = str(100)
-    poolstart = ".".join(poolstart)
+    if is_windows:
+        poolstart = "127.0.0.100"
+    else:
+        poolstart = ip.split(".")
+        poolstart[3] = str(100)
+        poolstart = ".".join(poolstart)
     while lbpool=="":
         lbpool = input(f"Enter the load balancer pool to be used [defult : {poolstart}/30] : ") or f"{poolstart}/30"
         if not validate_iprange(lbpool):
@@ -779,23 +786,17 @@ def check_status():
     execute_command("kubectl get pods --all-namespaces")
 
 
-def install_k8s(re_install_dependencies=False):
+def install_k8s():
     # delete old namespaces
     ## check if k8s namespace exists
-    if re_install_dependencies:
-        output, error = execute_command("kubectl get ns k8s", False)
-        if output != "":
-            execute_command("kubectl delete ns k8s", False)
-            ## wait until k8s is deleted
-            execute_command(
-                """kubectl wait --for=delete --timeout=600s namespace/k8s""")
-        command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
-        if docker_registry:
-            command = command + " --set imageRegistry={}".format(docker_registry)
 
-        output, error = execute_command(command,timeout_seconds=None)
+    command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
+    if docker_registry:
+        command = command + " --set imageRegistry={}".format(docker_registry)
 
-        time.sleep(10)
+    output, error = execute_command(command,timeout_seconds=None)
+
+    time.sleep(10)
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
@@ -949,7 +950,7 @@ def main():
             create_kubernetes_cluster()
             deploy_calico()
     check_status()
-    install_k8s(choice <= 2)
+    install_k8s()
 
 
 if __name__ == "__main__":
