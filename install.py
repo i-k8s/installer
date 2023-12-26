@@ -816,7 +816,7 @@ def main():
         create_kubernetes_cluster()
         deploy_calico()
     check_status()
-    install_k8s(choice == 3)
+    install_k8s(choice <= 3)
 
 
 if __name__ == "__main__":
