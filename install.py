@@ -19,14 +19,21 @@ is_first_master = False
 ha_proxy_installed = False
 docker_registry_with_slash = ""
 single_node = False
-wildcard_domain = "k8s.amprajin.in"
+docker_registry_domain = ""
+dashboard_domain = ""
+pg_admin_domain = ""
 use_ceph = False
 ceph_mon_ips = []
 ceph_user = ""
 ceph_key = ""
 nfs_server = ""
 nfs_path = ""
+use_public_ip_only = False
 use_public_ip_for_dashboard = False
+install_docker_registry = False
+use_public_ip_for_docker_registry = False
+install_pg_admin = False
+
 
 all_interfaces = []
 
@@ -155,7 +162,15 @@ def collect_node_info():
     global docker_registry
     global vip
     global lbpool
-    global wildcard_domain
+    global dashboard_domain
+    global docker_registry_domain
+    global pg_admin_domain
+    global use_public_ip_only
+    global use_public_ip_for_dashboard
+    global use_public_ip_for_docker_registry
+    global install_docker_registry
+    global install_pg_admin
+    global docker_registry_ip
     global use_ceph
     global ceph_mon_ips
     global ceph_user
@@ -240,7 +255,17 @@ def collect_node_info():
         print("Invalid input try again !")
     has_internet = has_internet == "y"
     if not has_internet:
-        docker_registry = input("Enter the docker registry to be used: ")
+        install_docker_registry = input("Do you want to install harbor docker registry? (y/n) [defult: n] : ") or "n"
+        install_docker_registry = install_docker_registry == "y"
+        if install_docker_registry:
+            docker_registry_domain = input("Enter the docker registry domain to be used: ")
+            docker_registry = docker_registry_domain + "/library/"
+            docker_registry_ip = None
+        else:
+            docker_registry = input("Enter the docker registry to be used: ")
+            docker_registry_ip = input("Enter the docker registry IP to be used: ")
+        
+        
         docker_registry_with_slash = docker_registry.endswith(
             "/") and docker_registry or docker_registry + "/"
     if master_count>1:
@@ -255,7 +280,6 @@ def collect_node_info():
         if not validate_iprange(lbpool):
             lbpool = ""
             print ("invalid ip range use format  192.168.10.0/24 or 192.168.9.1-192.168.9.5")
-    wildcard_domain = input("Enter the wildcard domain to be used: ")
     use_ceph = input("Do you want to use Ceph for storage? (y/n) [defult: n] : ") or "n"
     use_ceph = use_ceph == "y"
     if use_ceph:
@@ -271,6 +295,27 @@ def collect_node_info():
                 print("Invalid ip address for nfs server..")
 
         nfs_path = input("Enter the NFS path defult[/]:") or "/"
+
+
+    use_public_ip_only = input("Do you want to use public IP only? (y/n) [defult: n] : ") or "n"
+    use_public_ip_only = use_public_ip_only == "y"
+    if use_public_ip_only:
+        use_public_ip_for_dashboard = True
+        use_public_ip_for_docker_registry = True
+    else:
+        use_public_ip_for_dashboard = input("Do you want to use public IP for dashboard? (y/n) [defult: n] : ") or "n"
+        use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
+        if install_docker_registry:
+            use_public_ip_for_docker_registry = input("Do you want to use public IP for docker registry? (y/n) [defult: n] : ") or "n"
+            use_public_ip_for_docker_registry = use_public_ip_for_docker_registry == "y"
+
+
+    
+    dashboard_domain = input("Enter the dashboard domain to be used: ")
+    install_pg_admin = input("Do you want to install pg admin? (y/n) [defult: n] : ") or "n"
+    install_pg_admin = install_pg_admin == "y"
+    if install_pg_admin:
+        pg_admin_domain = input("Enter the pg admin domain to be used: ")
 
 
 def print_node_info():
@@ -290,7 +335,7 @@ def print_node_info():
     print("docker_registry: {}".format(docker_registry))
     print("vip: {}".format(vip))
     print("lbpool: {}".format(lbpool))
-    print("wildcard_domain: {}".format(wildcard_domain))
+    print("dashboard_domain: {}".format(dashboard_domain))
     print("use_ceph: {}".format(use_ceph))
     print("ceph_mon_ips: {}".format(ceph_mon_ips))
     print("ceph_user: {}".format(ceph_user))
@@ -315,7 +360,7 @@ def update_hosts_file():
         command = "echo \"{} master{}.in\" >> /etc/hosts".format(
             master_ips[i], i+1)
         execute_command(command)
-    if docker_registry:
+    if docker_registry and docker_registry_ip:
         command = "echo \"{} {}\" >> /etc/hosts".format(
             docker_registry_ip, docker_registry)
         execute_command(command)
@@ -554,7 +599,17 @@ def install_k8s():
     command = """helm install k8s ./k8s -n k8s --create-namespace \
                                 --set nfs-server-provisioner.storageClass.parameters.server={} \
                                 --set nfs-server-provisioner.storageClass.parameters.path={} \
-                                --set kubernetes-dashboard.app.ingress.hosts[0]={}""".format(nfs_server, nfs_path, wildcard_domain.replace("*", "k8sdb"))
+                                --set kubernetes-dashboard.app.ingress.hosts[0]={}""".format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
+    if use_public_ip_only:
+        command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
+    loadbalancer_ip1 = lbpool.count("-") == 1 and lbpool.split("-")[0] or lbpool.split("/")[0]
+    # find the next ip  after loadbalancer_ip1
+    loadbalancer_ip2 = loadbalancer_ip1.split(".")
+    loadbalancer_ip2[3] = str(int(loadbalancer_ip2[3]) + 1)
+    loadbalancer_ip2 = ".".join(loadbalancer_ip2)
+    command = command + f" --set kong-internal.service.loadBalancerIP={loadbalancer_ip2} --set kong.service.loadBalancerIP={loadbalancer_ip1}"
+    
+    
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
     output, error = execute_command(command)

@@ -57,3 +57,6 @@ dependencies:
   - name: pgadmin4
     condition: pgadmin4.enabled
     version: "1.17.3"
+  - name: harbor
+    condition: harbor.enabled
+    version: "19.2.3"

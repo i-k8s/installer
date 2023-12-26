@@ -148,3 +148,15 @@ nfs-server-provisioner:
       server: nfs-server.example.com
       path: /share
       readOnly: "false"
+harbor:
+  enabled: false
+  ingress:
+    core:
+      ingressClassName: "publicIngress"
+      hostname: core.harbor.domain
+      annotations:
+        ingress.kubernetes.io/ssl-redirect: 'true'
+        ingress.kubernetes.io/proxy-body-size: '0'
+        cert-manager.io/cluster-issuer: cluster-issuer-public
+pgadmin4:
+  enabled: false
