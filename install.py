@@ -618,12 +618,29 @@ def deploy_calico():
     execute_command("""helm repo update""", False)
     execute_command(
         """helm install calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
-    # sleep for 2 minutes
-    execute_command("""sleep 120""")
+    # sleep for 10 seconds
+    execute_command("sleep 10", False)
+    # wait till pods are deployed in namespace tigera-operator and calico-system and calico-apiserver
+    # check atlease one pod in each namespace
+    
+    output, error = execute_command("kubectl get pods -n tigera-operator" , False)
+    while output == "":
+        output, error = execute_command("kubectl get pods -n tigera-operator", False)
+        time.sleep(5)
+    output, error = execute_command("kubectl get pods -n calico-system", False)
+    while output == "":
+        output, error = execute_command("kubectl get pods -n calico-system", False)
+        time.sleep(5)
+    output, error = execute_command("kubectl get pods -n calico-apiserver", False)
+    while output == "":
+        output, error = execute_command("kubectl get pods -n calico-apiserver", False)
+        time.sleep(5)
+    ## sleep for 10 seconds
+    execute_command("sleep 10", False)
     # wait until calico is deployed
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator")
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver")
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system")
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system", False)
 
 
 
