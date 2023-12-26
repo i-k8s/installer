@@ -35,7 +35,7 @@ ceph_key = ""
 nfs_server = ""
 nfs_path = ""
 use_public_ip_only = False
-use_privite_ip_only = False
+use_private_ip_only = False
 use_public_ip_for_dashboard = False
 install_docker_registry = False
 use_public_ip_for_docker_registry = False
@@ -289,7 +289,7 @@ def collect_node_info():
     global nfs_path
     global all_interfaces
     global base_domain
-    global use_privite_ip_only
+    global use_private_ip_only
     global is_windows
     
 
@@ -424,9 +424,9 @@ def collect_node_info():
         use_public_ip_for_dashboard = True
         use_public_ip_for_docker_registry = True
     else:
-        use_privite_ip_only = input("Do you want to use privite IP only? (y/n) [defult: n] : ") or "n"
-        use_privite_ip_only = use_privite_ip_only == "y"
-        if not use_privite_ip_only:
+        use_private_ip_only = input("Do you want to use private IP only? (y/n) [defult: n] : ") or "n"
+        use_private_ip_only = use_private_ip_only == "y"
+        if not use_private_ip_only:
             use_public_ip_for_dashboard = input("Do you want to use public IP for dashboard? (y/n) [defult: n] : ") or "n"
             use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
             if install_docker_registry:
@@ -479,7 +479,7 @@ def print_node_info():
     print("pg_admin_domain: {}".format(pg_admin_domain))
     print("base_domain: {}".format(base_domain))
     print("interface: {}".format(interface))
-    print("use_privite_ip_only: {}".format(use_privite_ip_only))
+    print("use_private_ip_only: {}".format(use_private_ip_only))
 
 
 
@@ -806,10 +806,10 @@ def install_k8s():
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
 --set nfs-server-provisioner.storageClass.parameters.path="{}" \
 --set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
-    if use_public_ip_only or use_privite_ip_only:
+    if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
-        if use_privite_ip_only:
-            command = command + " --set kong.ingressController.ingressClass=priviteIngress"
+        if use_private_ip_only:
+            command = command + " --set kong.ingressController.ingressClass=privateIngress"
     
     if not use_public_ip_only:
         # check  certificate and key exists and it was modified more than 5 years ago
@@ -833,8 +833,8 @@ def install_k8s():
             command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=publicIngress"
             command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
         else:
-            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=priviteIngress"
-            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-privite"
+            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=privateIngress"
+            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-private"
     if install_pg_admin:
         command = command + " --set pgadmin4.enabled=true"
         command = command + """ --set pgadmin4.ingress.hosts[0].host="{}" """.format(pg_admin_domain)
@@ -846,15 +846,15 @@ def install_k8s():
             command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=publicIngress"
             command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
         else:
-            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=priviteIngress"
-            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-privite"
+            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=privateIngress"
+            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-private"
 
     
     
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
     else:
-        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=priviteIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-privite"
+        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=privateIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-private"
     output, error = execute_command(command, timeout_seconds=None)
 
     print(f"""

@@ -10,7 +10,7 @@ kubernetes-dashboard:
     enabled: false
   app:
     ingress:
-      ingressClassName: priviteIngress
+      ingressClassName: privateIngress
       issuer: selfsigned
       enabled: true
       hosts:
@@ -82,7 +82,7 @@ kong-internal:
     clusterIP: None
   ingressController:
     enabled: true
-    ingressClass: priviteIngress
+    ingressClass: privateIngress
     livenessProbe: 
       enabled: false
     readinessProbe:
@@ -95,7 +95,7 @@ nginx-ingress-controller:
 nginx-ingress-controller-internal:
   enabled: false
   ingressClassResource:
-    name: priviteIngress
+    name: privateIngress
 ceph-csi-cephfs:
   enabled: false
   csiConfig:
