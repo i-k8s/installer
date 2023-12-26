@@ -601,15 +601,21 @@ def create_kubernetes_cluster():
 
 def install_helm():
     # Install Helm and configure as required
-    execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
-    execute_command(
-        "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null", False)
-    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
-    execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False)
-    execute_command(
-        """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
-    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", False)
-    execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install  -y helm""")
+    #check if helm is installed
+    output, error = execute_command("which helm")
+    if output == "":
+        execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
+        execute_command(
+            "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null", False)
+        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
+        execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False)
+        execute_command(
+            """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
+        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", False)
+        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install  -y helm""")
+        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-mark hold helm""")
+    else:
+        print("helm already installed, Please manually check it is configured correctly")
 
 
 def deploy_calico():
@@ -757,7 +763,7 @@ def install_k8s():
         print(f""" use this credentials to login to pg admin4
         email : {email}
         password : {password}""")
-        
+
           
 
 
