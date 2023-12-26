@@ -630,11 +630,11 @@ def deploy_calico():
 
 def check_status():
     # Check if all the pods are running
-    execute_command("kubectl get pods --all-namespaces")
+    execute_command("kubectl get pods --all-namespaces", False)
     # Check if all the nodes are ready
-    execute_command("kubectl get nodes")
+    execute_command("kubectl get nodes", False)
     # Check if the cluster is ready
-    execute_command("kubectl get cs")
+    execute_command("kubectl get cs", False)
     execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n kube-system", False)
     print("pods status after waiting")
     execute_command("kubectl get pods --all-namespaces")
@@ -720,8 +720,7 @@ def main():
         install_kubernetes()
         install_keepalived_haproxy()
         install_helm()
-    if choice < 2:
-        install_helm()
+    if choice <= 2:
         create_kubernetes_cluster()
         deploy_calico()
     check_status()
