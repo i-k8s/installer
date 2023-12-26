@@ -643,7 +643,7 @@ def check_status():
 def install_k8s():
     # delete old namespaces
     ## check if k8s namespace exists
-    output, error = execute_command("kubectl get ns k8s")
+    output, error = execute_command("kubectl get ns k8s", False)
     if output != "":
         execute_command("kubectl delete ns k8s", False)
         ## wait until k8s is deleted
@@ -719,8 +719,8 @@ def main():
         install_containerd()
         install_kubernetes()
         install_keepalived_haproxy()
-        install_helm()
     if choice <= 2:
+        install_helm()
         create_kubernetes_cluster()
         deploy_calico()
     check_status()
