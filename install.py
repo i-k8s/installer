@@ -666,9 +666,11 @@ def install_k8s():
         ## wait until k8s is deleted
         execute_command(
             """kubectl wait --for=delete --timeout=600s namespace/k8s""")
-    
-    output, error = execute_command(
-        " helm install k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set imageRegistry={} --set ipPool={}".format(docker_registry, lbpool))
+    command = "helm install k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={}".format(lbpool)
+    if docker_registry:
+        command = command + " --set imageRegistry={}".format(docker_registry)
+
+    output, error = execute_command(command)
     if error != None:
         print("Error installing k8s-dependencies")
         print(error)
