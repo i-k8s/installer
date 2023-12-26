@@ -666,7 +666,7 @@ def install_k8s():
         ## wait until k8s is deleted
         execute_command(
             """kubectl wait --for=delete --timeout=600s namespace/k8s""")
-    command = "helm install k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={}".format(lbpool)
+    command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
     if docker_registry:
         command = command + " --set imageRegistry={}".format(docker_registry)
 
@@ -680,7 +680,7 @@ def install_k8s():
         "Do you want to use public IP for dashboard? (y/n): ")
     use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
 
-    command = """helm install k8s ./k8s -n k8s --create-namespace \
+    command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
                                 --set nfs-server-provisioner.storageClass.parameters.server={} \
                                 --set nfs-server-provisioner.storageClass.parameters.path={} \
                                 --set kubernetes-dashboard.app.ingress.hosts[0]={}""".format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
