@@ -468,10 +468,12 @@ def install_kubernetes():
     # Disable swap
     execute_command("sudo swapoff -a")
     execute_command("sudo sed -i -e '/swap/d' /etc/fstab")
-    # firewall allow ports 22,80,443,8443,6443,2379,2380,10250,10257,10259,30000-32767
-    execute_command(
-        "sudo ufw allow 22,80,443,8443,6443,2379,2380,10250,10257,10259/tcp")
-    execute_command("sudo ufw allow 30000:32767/tcp")
+    output, error = execute_command("sudo which ufw")
+    if not output == "":
+        # firewall allow ports 22,80,443,8443,6443,2379,2380,10250,10257,10259,30000-32767
+        execute_command(
+            "sudo ufw allow 22,80,443,8443,6443,2379,2380,10250,10257,10259/tcp")
+        execute_command("sudo ufw allow 30000:32767/tcp")
     # Configure kubectl
 
 # Function to install and configure Keepalived & HAProxy
