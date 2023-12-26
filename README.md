@@ -4,7 +4,21 @@ This repo keep all helem charts for kubernetes deployments to start and run the 
 
 ## Prerequisites
 
-python3 is required to run the script
+python3 and pip3 is required to run the script
+
+```bash
+sudo apt install python3
+sudo apt install python3-pip
+
+```
+
+install required dependencies
+
+```bash
+pip3 install psutil
+pip3 install pyOpenSSL
+```
+
 
 there will be no existing kubernetes cluster in the server
 

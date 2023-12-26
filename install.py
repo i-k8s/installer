@@ -2,6 +2,11 @@
 import subprocess
 import re
 import time
+import platform
+
+
+
+import sys
 
 master_ips = []
 worker_ips = []
@@ -30,16 +35,71 @@ ceph_key = ""
 nfs_server = ""
 nfs_path = ""
 use_public_ip_only = False
+use_privite_ip_only = False
 use_public_ip_for_dashboard = False
 install_docker_registry = False
 use_public_ip_for_docker_registry = False
 install_pg_admin = False
 base_domain = "ik8s.amprajin.in"
+is_windows = platform.system() == "Windows"
 
 
 all_interfaces = []
 
 # Function to execute shell commands
+
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+def cert_gen(
+    emailAddress="devops@ults.in",
+    commonName="commonName",
+    countryName="IN",
+    localityName="Calicut",
+    stateOrProvinceName="kerala",
+    organizationName="ULTS",
+    organizationUnitName="ADM",
+    serialNumber=0,
+    validityStartInSeconds=0,
+    validityEndInSeconds=10*365*24*60*60,
+    CERT_FILE="selfsigned.crt"):
+    from OpenSSL import crypto, SSL
+    #can look at generated file using openssl:
+    #openssl x509 -inform pem -in selfsigned.crt -noout -text
+    # create a key pair
+    k = crypto.PKey()
+    k.generate_key(crypto.TYPE_RSA, 4096)
+    # create a self-signed cert
+    cert = crypto.X509()
+    cert.get_subject().C = countryName
+    cert.get_subject().ST = stateOrProvinceName
+    cert.get_subject().L = localityName
+    cert.get_subject().O = organizationName
+    cert.get_subject().OU = organizationUnitName
+    cert.get_subject().CN = commonName
+    cert.get_subject().emailAddress = emailAddress
+    cert.set_serial_number(serialNumber)
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(validityEndInSeconds)
+    cert.set_issuer(cert.get_subject())
+    cert.set_pubkey(k)
+    cert.sign(k, 'sha512')
+    certficate = crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("utf-8")
+    key = crypto.dump_privatekey(crypto.FILETYPE_PEM, k).decode("utf-8")
+    with open(CERT_FILE, "wt") as f:
+        f.write(certficate)
+    return certficate, key
+
+
+def check_installed(name):
+    import shutil
+    path = shutil.which(name)
+    if path:
+        print(f"{name} already installed")
+        return True
+    else:
+        print(f"{name} not installed")
+        return False
 
 def validate_ipv4(ip):
     # Regular expression pattern for IPv4 validation
@@ -105,7 +165,7 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
             print(f"Error occurred: {e}")
             retries += 1
 
-        time.sleep(1)  # Add a small delay before retrying
+        time.sleep(5)  # Add a small delay before retrying
     print(f"Command '{command}' failed after {max_retries} retries.")
     if exit_on_error:
         print("Exiting...")
@@ -115,23 +175,39 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
 
 
 def get_lan_interface_name():
+    
     """Returns the name of the LAN interface on Ubuntu."""
     global all_interfaces
-
-    output, error = execute_command(
-        "ip -o link show | awk -F': ' '{print $2}'")
-    all_interfaces = output.splitlines()
-    for line in output.splitlines():
-        if 'e' in line and 'lo' not in line:
-            return line
+    global interface
+    import psutil
+    
+    # Get a list of all the network interfaces
+    all_interfaces =  list(psutil.net_if_addrs().keys())
+    print(all_interfaces)
+    print("size of all_interfaces",len(all_interfaces))
+    # Get the LAN interface name
+    interfaces = [interface for interface in all_interfaces if interface.startswith("en")]
+    if len(interfaces) > 0:
+        interface = interfaces[0]
+        return interface
+    else:
+        print("Error getting LAN interface name returning first interface")
+        interface = all_interfaces[0]
+        return interface
 
 
 def get_lan_interface_ip():
+    
     """Returns the IP address of the LAN interface on Ubuntu."""
+    global interface
+    import psutil
 
-    output, error = execute_command(
-        f"ip addr show {interface} | grep -oP 'inet\s+\K[\d.]+'")
-    lines = output.splitlines()
+
+    lines = psutil.net_if_addrs()[interface]
+    # get all ip address of the interface
+    lines = [line for line in lines if line.family == 2]
+    lines = [line.address for line in lines]
+    print(lines)
     if len(lines) > 0:
         if len(lines) > 1:
             print("Multiple IP addresses found for interface {}".format(interface))
@@ -213,7 +289,7 @@ def collect_node_info():
     while interface == "":
         base_domain = input("Enter the base domain to be used [defult : {}] : ".format(base_domain)) or base_domain
         interface = get_lan_interface_name()
-        print("LAN interface is {} is this correct (y/n) [default: y] ?:".format(interface))
+        print("""LAN interface is " {} " is this correct (y/n) [default: y] ?:""".format(interface))
         if (input() or "y") == "n":
             print("Please choose the LAN interface to be used: ")
             for i in range(len(all_interfaces)):
@@ -337,11 +413,17 @@ def collect_node_info():
         use_public_ip_for_dashboard = True
         use_public_ip_for_docker_registry = True
     else:
-        use_public_ip_for_dashboard = input("Do you want to use public IP for dashboard? (y/n) [defult: n] : ") or "n"
-        use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
-        if install_docker_registry:
-            use_public_ip_for_docker_registry = input("Do you want to use public IP for docker registry? (y/n) [defult: n] : ") or "n"
-            use_public_ip_for_docker_registry = use_public_ip_for_docker_registry == "y"
+        use_privite_ip_only = input("Do you want to use privite IP only? (y/n) [defult: n] : ") or "n"
+        use_privite_ip_only = use_privite_ip_only == "y"
+        if not use_privite_ip_only:
+            use_public_ip_for_dashboard = input("Do you want to use public IP for dashboard? (y/n) [defult: n] : ") or "n"
+            use_public_ip_for_dashboard = use_public_ip_for_dashboard == "y"
+            if install_docker_registry:
+                use_public_ip_for_docker_registry = input("Do you want to use public IP for docker registry? (y/n) [defult: n] : ") or "n"
+                use_public_ip_for_docker_registry = use_public_ip_for_docker_registry == "y"
+        else:
+            use_public_ip_for_dashboard = False
+            use_public_ip_for_docker_registry = False
 
 
     
@@ -376,9 +458,26 @@ def print_node_info():
     print("ceph_key: {}".format(ceph_key))
     print("nfs_server: {}".format(nfs_server))
     print("nfs_path: {}".format(nfs_path))
+    print("use_public_ip_only: {}".format(use_public_ip_only))
+    print("use_public_ip_for_dashboard: {}".format(use_public_ip_for_dashboard))
+    print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
+    print("install_docker_registry: {}".format(install_docker_registry))
+    print("docker_registry_domain: {}".format(docker_registry_domain))
+    print("docker_registry_ip: {}".format(docker_registry_ip))
+    print("install_pg_admin: {}".format(install_pg_admin))
+    print("pg_admin_domain: {}".format(pg_admin_domain))
+    print("base_domain: {}".format(base_domain))
+    print("interface: {}".format(interface))
+    print("use_privite_ip_only: {}".format(use_privite_ip_only))
+
+
 
 # Function to add entries to /etc/hosts
 
+def update_hosts_file_windows():
+    print("updating hosts file on windows")
+    print("todo")
+    pass
 
 def update_hosts_file():
     # Add entries to /etc/hosts based on collected node information
@@ -400,14 +499,18 @@ def update_hosts_file():
         execute_command(command)
 
 
+
+def install_docker_windows():
+    print("installing docker on windows")
+    print("todo")
+    pass
+
 # Function to install containerd
 def install_containerd():
     # Check if containerd is installed
-    output, error = execute_command("which curl")
-    if output == "":
+    if not check_installed("curl"):
         execute_command("DEBIAN_FRONTEND=noninteractive sudo apt install -y curl")
-    output, error = execute_command("which containerd")
-    if output == "":
+    if not check_installed("containerd"):
         # Install containerd
         # Add containerd configuration
         # Restart containerd
@@ -420,11 +523,11 @@ def install_containerd():
             "sudo tar Cxzvf /usr/local containerd-1.6.14-linux-amd64.tar.gz")
         execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
-        execute_command("sleep 2")
+        time.sleep(2)
         execute_command("sudo systemctl enable containerd --now", False)
-        execute_command("sleep 2")
+        time.sleep(2)
         execute_command("sudo systemctl restart containerd", False)
-        execute_command("sleep 2")
+        time.sleep(2)
         execute_command("sudo systemctl status containerd")
 
 
@@ -432,8 +535,7 @@ def install_containerd():
         print("Containerd already installed, Please check if it is configured correctly")
         print(" warning !! recommented to unistall all dependencies before installing this")
     
-    output, error = execute_command("which runc")
-    if output=="":
+    if not check_installed("runc"):
         execute_command("sudo install -m 755 runc.amd64 /usr/local/sbin/runc")
     else:
         print("runc already installed, Please check if it is configured correctly")
@@ -456,6 +558,10 @@ EOF""")
     # If not installed, follow the provided steps to install containerd
 
 
+def install_kubernetes_windows():
+    print("installing kubernetes on windows")
+    print("todo")
+    pass
 # Function to install Kubernetes components
 def install_kubernetes():
     # Add Kubernetes GPG key
@@ -484,6 +590,10 @@ def install_kubernetes():
 
 # Function to install and configure Keepalived & HAProxy
 
+def install_keepalived_haproxy_windows():
+    print("installing keepalived and haproxy on windows")
+    print("todo")
+    pass
 
 def install_keepalived_haproxy():
     # Install and configure Keepalived & HAProxy on multiple master nodes if needed
@@ -546,7 +656,10 @@ EOF""".format(vip=vip, interface=interface))
 
 # Function to create Kubernetes cluster using kubeadm
 
-
+def create_kubernetes_cluster_windows():
+    print("creating kubernetes cluster on windows")
+    print("todo")
+    pass
 def create_kubernetes_cluster():
     # pull images
     output = None
@@ -598,12 +711,15 @@ def create_kubernetes_cluster():
 
 # Function to install Helm
 
+def install_helm_windows():
+    print("installing helm on windows")
+    print("todo")
+    pass
 
 def install_helm():
     # Install Helm and configure as required
     #check if helm is installed
-    output, error = execute_command("which helm")
-    if output == "":
+    if not check_installed("helm"):
         execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
         execute_command(
             "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null", False)
@@ -623,9 +739,9 @@ def deploy_calico():
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
     execute_command("""helm repo update""", False)
     execute_command(
-        """helm install calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
+        """helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
     # sleep for 10 seconds
-    execute_command("sleep 10", False)
+    time.sleep(10)
     # wait till pods are deployed in namespace tigera-operator and calico-system and calico-apiserver
     # check atlease one pod in each namespace
     
@@ -642,7 +758,7 @@ def deploy_calico():
         output, error = execute_command("kubectl get pods -n calico-apiserver", False)
         time.sleep(5)
     ## sleep for 10 seconds
-    execute_command("sleep 10", False)
+    time.sleep(10)
     # wait until calico is deployed
     execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False)
     execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False)
@@ -679,14 +795,24 @@ def install_k8s(re_install_dependencies=False):
 
         output, error = execute_command(command,timeout_seconds=None)
 
-        execute_command("sleep 10")
+        time.sleep(10)
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
 --set nfs-server-provisioner.storageClass.parameters.path="{}" \
 --set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
-    if use_public_ip_only:
+    if use_public_ip_only or use_privite_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
+        if use_privite_ip_only:
+            command = command + " --set kong.ingressController.ingressClass=priviteIngress"
+    
+    if not use_public_ip_only:
+        cert,key = cert_gen(commonName=base_domain)
+        print("cert : ",cert)
+        print("key : ",key)
+        command = command + " --set tls.cert={}".format(cert)
+        command = command + " --set tls.key={}".format(key)
+
     loadbalancer_ip1 = lbpool.count("-") == 1 and lbpool.split("-")[0] or lbpool.split("/")[0]
     # find the next ip  after loadbalancer_ip1
     loadbalancer_ip2 = loadbalancer_ip1.split(".")
@@ -804,14 +930,24 @@ def main():
         print("Invalid choice")
         exit(1)
     if choice == 1:
-        update_hosts_file()
-        install_containerd()
-        install_kubernetes()
-        install_keepalived_haproxy()
+        if is_windows:
+            update_hosts_file_windows()
+            install_docker_windows()
+            install_kubernetes_windows()
+            install_keepalived_haproxy_windows()
+        else:
+            update_hosts_file()
+            install_containerd()
+            install_kubernetes()
+            install_keepalived_haproxy()
     if choice <= 2:
-        install_helm()
-        create_kubernetes_cluster()
-        deploy_calico()
+        if is_windows:
+            install_helm_windows()
+            create_kubernetes_cluster_windows()
+        else:
+            install_helm()
+            create_kubernetes_cluster()
+            deploy_calico()
     check_status()
     install_k8s(choice <= 2)
 

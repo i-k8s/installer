@@ -18,18 +18,27 @@ spec:
     # ACME Email address
     email: prajinprakash4u@gmail.com
     privateKeySecretRef:
-      name: {{ include "k8s-dependencies.fullname" . }}-cluster-issuer-public-secret # staging or production
+      name: {{ include "k8s.fullname" . }}-cluster-issuer-public-secret # staging or production
     solvers:
       - http01:
           ingress:
             class: publicIngress
 ---
 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ca-key-pair
+  namespace: sandbox
+data:
+  tls.crt: {{ .Values.tls.crt | b64encode }}
+  tls.key: {{ .Values.tls.key | b64encode }}
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   labels:
-    {{- include "k8s-dependencies.labels" . | nindent 4 }}
+    {{- include "k8s.labels" . | nindent 4 }}
   name: cluster-issuer-private
   annotations:
     # This is what defines this resource as a hook. Without this line, the
@@ -38,6 +47,7 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-failed
     "helm.sh/hook-weight": "100"
 spec:
-  selfSigned: { }
+  ca:
+    secretName: ca-key-pair
 
 {{- end }}

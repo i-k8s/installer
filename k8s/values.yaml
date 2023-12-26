@@ -1,4 +1,7 @@
 createClusterIssuer: true
+tls:
+  key: test
+  crt: test
 kubernetes-dashboard:
   enabled: true
   nginx-ingress:
