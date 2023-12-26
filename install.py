@@ -579,9 +579,9 @@ def create_kubernetes_cluster():
             execute_command("sudo chown $(id -u):$(id -g) $HOME/.kube/config")
             if single_node:
                 execute_command(
-                    "kubectl taint nodes --all node-role.kubernetes.io/master-")
+                    "kubectl taint nodes --all node-role.kubernetes.io/master-", False)
                 execute_command(
-                    "kubectl taint nodes --all node-role.kubernetes.io/control-plane-")
+                    "kubectl taint nodes --all node-role.kubernetes.io/control-plane-", False)
         else:
             join_command = input("Enter the join command: ")
             output, error = execute_command(join_command)
