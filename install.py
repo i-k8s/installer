@@ -603,7 +603,7 @@ def install_helm():
     # Install Helm and configure as required
     execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
     execute_command(
-        "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null")
+        "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null", False)
     execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
     execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False)
     execute_command(
