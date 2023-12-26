@@ -681,9 +681,9 @@ def install_k8s():
     execute_command("sleep 10")
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
-                                --set nfs-server-provisioner.storageClass.parameters.server={} \
-                                --set nfs-server-provisioner.storageClass.parameters.path={} \
-                                --set kubernetes-dashboard.app.ingress.hosts[0]={}""".format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
+--set nfs-server-provisioner.storageClass.parameters.server="{}" \
+--set nfs-server-provisioner.storageClass.parameters.path="{}" \
+--set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
     if use_public_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
     loadbalancer_ip1 = lbpool.count("-") == 1 and lbpool.split("-")[0] or lbpool.split("/")[0]
@@ -694,7 +694,7 @@ def install_k8s():
     command = command + f" --set kong-internal.service.loadBalancerIP={loadbalancer_ip2} --set kong.service.loadBalancerIP={loadbalancer_ip1}"
     if install_docker_registry:
         command = command + " --set harbor.enabled=true"
-        command = command + " --set harbor.ingress.core.hostname={}".format(docker_registry_domain)
+        command = command + """ --set harbor.ingress.core.hostname="{}" """.format(docker_registry_domain)
         if use_public_ip_for_docker_registry:
             command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=publicIngress"
             command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
@@ -703,11 +703,11 @@ def install_k8s():
             command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-privite"
     if install_pg_admin:
         command = command + " --set pgadmin4.enabled=true"
-        command = command + " --set pgadmin4.ingress.hosts[0].host={}".format(pg_admin_domain)
+        command = command + """ --set pgadmin4.ingress.hosts[0].host="{}" """.format(pg_admin_domain)
         email = input("Enter the email to be used for pg admin [defult : admin@{}]: ".format(base_domain)) or "admin@{}".format(base_domain)
         password = input("Enter the password to be used for pg admin [defult : admin]: ") or "admin"
-        command = command + f" --set pgadmin4.env.email={email}"
-        command = command + f" --set pgadmin4.env.password={password}"
+        command = command + f""" --set pgadmin4.env.email={email}" """
+        command = command + f""" --set pgadmin4.env.password={password}" """
         if use_public_ip_for_dashboard:
             command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=publicIngress"
             command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
