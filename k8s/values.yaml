@@ -1,3 +1,4 @@
+createClusterIssuer: true
 kubernetes-dashboard:
   enabled: true
   nginx-ingress:
