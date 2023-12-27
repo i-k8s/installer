@@ -639,8 +639,6 @@ def create_kubernetes_cluster():
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
             output, error = execute_command(command, False,max_retries=1)
-            join_match = r'kubeadm join .*'
-            join_match_output = re.findall(join_match, output)
             start_index = output.find("You can now join")
             node_join_command_info = output[start_index:]
 
@@ -672,6 +670,8 @@ def create_kubernetes_cluster():
 # Function to install Helm
 
 def install_helm_windows():
+    if not is_first_master:
+        return
     print("installing helm on windows")
     print("todo")
     pass
@@ -679,6 +679,8 @@ def install_helm_windows():
 def install_helm():
     # Install Helm and configure as required
     #check if helm is installed
+    if not is_first_master:
+        return
     if not check_installed("helm"):
         execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False, max_retries=1)
         execute_command(
@@ -695,34 +697,36 @@ def install_helm():
 
 
 def deploy_calico():
+    if not is_first_master:
+        return
     execute_command(
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
     execute_command("""helm repo update""", False, max_retries=1)
     execute_command(
         """helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
-    # sleep for 10 seconds
-    time.sleep(10)
+    # sleep for 30 seconds
+    time.sleep(30)
     # wait till pods are deployed in namespace tigera-operator and calico-system and calico-apiserver
     # check atlease one pod in each namespace
     
-    output, error = execute_command("kubectl get pods -n tigera-operator" , False)
+    output, error = execute_command("kubectl get pods -n tigera-operator" , False, retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n tigera-operator", False)
+        output, error = execute_command("kubectl get pods -n tigera-operator", False, retries=1)
         time.sleep(5)
-    output, error = execute_command("kubectl get pods -n calico-system", False)
+    output, error = execute_command("kubectl get pods -n calico-system", False, retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n calico-system", False)
+        output, error = execute_command("kubectl get pods -n calico-system", False, retries=1)
         time.sleep(5)
-    output, error = execute_command("kubectl get pods -n calico-apiserver", False)
+    output, error = execute_command("kubectl get pods -n calico-apiserver", False, retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n calico-apiserver", False)
+        output, error = execute_command("kubectl get pods -n calico-apiserver", False, retries=1)
         time.sleep(5)
     ## sleep for 10 seconds
     time.sleep(10)
     # wait until calico is deployed
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False)
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False)
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system", False)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False, retries=5)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False, retries=5)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system", False, retries=5)
 
 
 
@@ -907,7 +911,8 @@ def main():
             create_kubernetes_cluster()
             deploy_calico()
     check_status()
-    install_k8s()
+    if is_first_master:
+        install_k8s()
 
 
 if __name__ == "__main__":
