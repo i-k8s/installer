@@ -278,20 +278,20 @@ def collect_node_info():
 
     if not is_master or not is_first_master:
         while join_token == "" or join_token == None:
-            join_token = input("Enter the join token: ")
+            join_token = input("Enter the join token (--token): ")
             if not join_token:
                 print("Invalid join token please enter correct join token (--token) :")
                 join_token = ""
         while join_ca == "" or join_ca == None:
             join_ca = input("Enter the join ca (--discovery-token-ca-cert-hash): ")
             if not join_ca:
-                print("Invalid join ca please enter correct join ca")
+                print("Invalid join ca please enter correct join ca  (--discovery-token-ca-cert-hash)")
                 join_ca = ""
         if not is_first_master:
             while join_ca_key == "" or join_ca_key == None:
                 join_ca_key = input("Enter the join ca key (--discovery-token-unsafe-skip-ca-verification): ")
                 if not join_ca_key:
-                    print("Invalid join ca key please enter correct join ca key")
+                    print("Invalid join ca key please enter correct join ca key (--discovery-token-unsafe-skip-ca-verification)")
                     join_ca_key = ""
         else:
             return
