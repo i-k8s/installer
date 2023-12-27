@@ -578,7 +578,6 @@ def install_keepalived_haproxy():
         execute_command("sudo systemctl status keepalived", False, max_retries=1)
         configuratin = generate_haproxy_config(master_count)
         format_file("haproxy.cfg", [("_SERVER_", configuratin)], "/etc/haproxy/haproxy.cfg")
-        execute_command(generate_haproxy_config(master_count), False, max_retries=1)
         execute_command(
             "systemctl enable haproxy && systemctl restart haproxy", False, max_retries=1)
         execute_command("sudo systemctl status haproxy", False, max_retries=1)
