@@ -287,7 +287,7 @@ def collect_node_info():
             if not join_ca:
                 print("Invalid join ca please enter correct join ca  (--discovery-token-ca-cert-hash)")
                 join_ca = ""
-        if not is_first_master:
+        if is_master and not is_first_master:
             while join_ca_key == "" or join_ca_key == None:
                 join_ca_key = input("Enter the join ca key (--discovery-token-unsafe-skip-ca-verification): ")
                 if not join_ca_key:
@@ -296,7 +296,7 @@ def collect_node_info():
         else:
             return
     
-    print(" 0 master node means single node cluster setup...")
+    print("\n\n\n 0 master node means single node cluster setup...\n\n")
     master_count = int(
         input("Enter the number of master nodes [default: 0] ?:").strip() or "0")
     if master_count > 1:
