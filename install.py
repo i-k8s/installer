@@ -633,14 +633,12 @@ def create_kubernetes_cluster():
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
             output, error = execute_command(command, False,max_retries=1)
-            control_plane_pattern = r'kubeadm join .*?--control-plane .*?certificate-key [\w\d]+'
-            worker_node_pattern = r'kubeadm join .*?(?!--control-plane)'
-            control_plane_match = re.search(control_plane_pattern, output)
-            worker_node_match = re.search(worker_node_pattern, output)
-            if control_plane_match:
-                node_join_command_info += str(control_plane_match.group(0)) + "\n\n"
-            if worker_node_match:
-                node_join_command_info += str(worker_node_match.group(0)) + "\n\n"
+            join_match = r'kubeadm join .*'
+            join_match_output = re.findall(join_match, output)
+            if join_match_output:
+                print("Match found")
+                for group in join_match_output:
+                    node_join_command_info += str(group) + "\n\n"
 
                 # Configure kubectl
             # delete old config
