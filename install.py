@@ -533,13 +533,13 @@ def install_kubernetes_windows():
 # Function to install Kubernetes components
 def install_kubernetes():
     # Add Kubernetes GPG key
-    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", False, max_retries=1)
+    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-apt-keyring.gpg", False, max_retries=1)
     execute_command(
-        "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
+        "curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.25/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg")
     # Add Kubernetes apt repository
     execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", False, max_retries=1)
     execute_command(
-        "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
+        "echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.25/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False, max_retries=1)
     execute_command(
