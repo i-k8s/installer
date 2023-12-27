@@ -53,6 +53,16 @@ all_interfaces = []
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
+def format_file(src, repalces =[],dest=None):
+    with open(src, 'r') as file:
+        file_content = file.read()
+    modified_content = file_content
+    for find, replace in repalces:
+        modified_content = modified_content.replace(find, replace)
+    if dest == None:
+        dest = src
+    with open(dest, 'w') as file:
+        file.write(modified_content)
 def check_installed(name):
     import shutil
     path = shutil.which(name)
@@ -189,25 +199,10 @@ def get_lan_interface_ip():
 
 
 def generate_haproxy_config(num_masters):
-    config = f"""cat >> /etc/haproxy/haproxy.cfg <<EOF
-
-frontend kubernetes-frontend
-  bind *:8443
-  mode tcp
-  option tcplog
-  default_backend kubernetes-backend
-
-backend kubernetes-backend
-  option httpchk GET /healthz
-  http-check expect status 200
-  mode tcp
-  option ssl-hello-chk
-  balance roundrobin
-"""
+    config = ""
     for i in range(1, num_masters + 1):
         config += f"    server master{i} master{i}.in:6443 check fall 3 rise 2\n"
 
-    config += "EOF"
     return config
 # Function to collect node information
 
@@ -571,49 +566,10 @@ def install_keepalived_haproxy():
         execute_command("sudo apt update", False, max_retries=1)
         execute_command(
             "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy", False, max_retries=1)
-        execute_command("""cat >> /etc/keepalived/check_apiserver.sh <<EOF
-#!/bin/sh
-
-errorExit() {
-  echo "*** $@" 1>&2
-  exit 1
-}
-
-curl --silent --max-time 2 --insecure https://localhost:6443/ -o /dev/null || errorExit "Error GET https://localhost:6443/"
-if ip addr | grep -q {vip}; then
-  curl --silent --max-time 2 --insecure https://master.in:8443/ -o /dev/null || errorExit "Error GET https://master.in:8443/"
-fi
-EOF""".format(vip=vip))
+        format_file("check_apiserver.sh", [("_VIP_", vip)], "/etc/keepalived/check_apiserver.sh")
         execute_command("sudo chmod +x /etc/keepalived/check_apiserver.sh")
 
-        execute_command("""sudo cat >> /etc/keepalived/keepalived.conf <<EOF
-vrrp_script check_apiserver {
-  script "/etc/keepalived/check_apiserver.sh"
-  interval 3
-  timeout 10
-  fall 5
-  rise 2
-  weight -2
-}
-
-vrrp_instance VI_1 {
-    state BACKUP
-    interface {interface}
-    virtual_router_id 1
-    priority 100
-    advert_int 5
-    authentication {
-        auth_type PASS
-        auth_pass mysecret
-    }
-    virtual_ipaddress {
-        {vip}
-    }
-    track_script {
-        check_apiserver
-    }
-}
-EOF""".format(vip=vip, interface=interface))
+        format_file("keepalived.conf", [("_INTERFACE_", interface),("_VIP_",vip)], "/etc/keepalived/keepalived.conf")
 
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
         execute_command("sudo systemctl status keepalived", False, max_retries=1)
