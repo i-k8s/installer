@@ -650,10 +650,10 @@ def create_kubernetes_cluster():
                 execute_command(
                     "kubectl taint nodes --all node-role.kubernetes.io/control-plane-", False)
         else:
-            join_command = input("Enter the join command: ")
+            join_command = "sudo kubeadm join master.in:8443 --token {} --discovery-token-ca-cert-hash {} --control-plane --certificate-key {}".format(join_token, join_ca, join_ca_key)
             output, error = execute_command(join_command)
     else:
-        join_command = input("Enter the join command: ")
+        join_command = "sudo kubeadm join master.in:8443 --token {} --discovery-token-ca-cert-hash {}".format(join_token, join_ca)
         output, error = execute_command(join_command)
     # Configure kubectl
     # delete old config
