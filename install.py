@@ -46,7 +46,7 @@ CERT_FILE="tls.crt"
 KEY_FILE = "tls.key"
 
 all_interfaces = []
-
+node_join_command_info = ""
 # Function to execute shell commands
 
 
@@ -606,6 +606,7 @@ def create_kubernetes_cluster_windows():
     pass
 def create_kubernetes_cluster():
     # pull images
+    global node_join_command_info
     output = None
     error = None
     # reset existing cluster
@@ -628,6 +629,15 @@ def create_kubernetes_cluster():
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
             output, error = execute_command(command, False,max_retries=1)
+            control_plane_pattern = r'kubeadm join .*?--control-plane .*?certificate-key [\w\d]+'
+            worker_node_pattern = r'kubeadm join .*?(?!--control-plane)'
+            control_plane_match = re.search(control_plane_pattern, output)
+            worker_node_match = re.search(worker_node_pattern, output)
+            if control_plane_match:
+                node_join_command_info += str(control_plane_match.group(0)) + "\n\n"
+            if worker_node_match:
+                node_join_command_info += str(worker_node_match.group(0)) + "\n\n"
+
                 # Configure kubectl
             # delete old config
             execute_command("rm -rf $HOME/.kube", False, max_retries=1)
@@ -810,7 +820,10 @@ def install_k8s():
     mkdir -p $HOME/.kube
     sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
+          
 
+    to join more nodes use the following commands
+    {node_join_command_info}
                                      
     kubernetes cluster is installed successfully
     kubernetes dashboard url : https://{dashboard_domain}/
