@@ -259,11 +259,12 @@ def collect_node_info():
 
 
     global interface
+    print("\n"*100)
     print("========================= ik8s Kubernets Cluster setup =========================\n\n")
-    print("\n\nCollecting node information...")
-    print("\nPlease provide the following information to setup the cluster: \n\n")
+    print("\n\nWelcome to ik8s Kubernetes Cluster setup. Please provide the following information to setup the cluster:\n\n")
+    print("\n\n--------------------------------------------------------------------------------\n\n")
     while master_ip == "" or master_ip == None:
-        master_ip = input("Enter the control-plane IP (Virtual IP incase of loadbalanced masternoads): ")
+        master_ip = input("Control-plane IP (Virtual IP incase of loadbalanced masternoads): ")
         if not validate_ipv4(master_ip):
             print("\nInvalid ip please enter correct IP :")
             master_ip = ""
