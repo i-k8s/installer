@@ -746,17 +746,17 @@ def check_status():
     execute_command("kubectl get pods --all-namespaces")
 
 
-def install_k8s():
+def install_k8s(dependencies=False):
     # delete old namespaces
     ## check if k8s namespace exists
+    if dependencies:
+        command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
+        if docker_registry:
+            command = command + " --set imageRegistry={}".format(docker_registry)
 
-    command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
-    if docker_registry:
-        command = command + " --set imageRegistry={}".format(docker_registry)
+        output, error = execute_command(command,timeout_seconds=None)
 
-    output, error = execute_command(command,timeout_seconds=None)
-
-    time.sleep(10)
+        time.sleep(10)
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
@@ -878,10 +878,13 @@ def main():
             print("Exiting...")
             exit(1)
     print("Starting installation...")
-    print("Choose the options to be installed")
-    print("1. From scratch")
-    print("2. Resetting existing cluster")
-    print("3. setup dashboard by updating existing")
+    if is_first_master:
+        print("Installing master node...")
+        print("Choose the options to be installed")
+        print("1. From scratch")
+        print("2. Resetting existing cluster")
+        print("3. upgrade kubernets dependencies and metllb and cert-manager")
+        print("4. upgrade kubernets dependencies only")
 
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
@@ -890,7 +893,9 @@ def main():
     elif choice == 2:
         print("Starting installation from existing cluster... resetting")
     elif choice == 3:
-        print("Starting installation from existing cluster... dashboard by updating existing")
+        print("Starting installation from existing cluster... upgrading dependencies, metllb and cert-manager")
+    elif choice == 4:
+        print("Starting installation from existing cluster... upgrading dependencies only")
     else:
         print("Invalid choice")
         exit(1)
@@ -915,7 +920,7 @@ def main():
             deploy_calico()
     check_status()
     if is_first_master:
-        install_k8s()
+        install_k8s(choice <= 3)
 
 
 if __name__ == "__main__":
