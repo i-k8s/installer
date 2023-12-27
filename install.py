@@ -269,10 +269,12 @@ def collect_node_info():
             print("Invalid ip please enter correct IP")
             master_ip = ""
     
-    is_master = "y" == input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
+    is_master == input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
+    is_master = is_master == "y"
     if is_master:
         print("only one master node to be insitilized rest of them need to be joined.")
-        is_first_master = "y" == input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
+        is_first_master == input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
+        is_first_master = is_first_master == "y"
 
     if not is_master or not is_first_master:
         while join_token == "" or join_token == None:
@@ -300,7 +302,8 @@ def collect_node_info():
     if master_count > 1:
         ha_proxy_installed = True
     else:
-        ha_proxy_installed = "y" == input("Is HAProxy need to be installed for estending master nodes? :").strip() or "n"
+        ha_proxy_installed == input("Is HAProxy need to be installed for estending master nodes? :").strip() or "n"
+        ha_proxy_installed = ha_proxy_installed == "y"
         
         
     if ha_proxy_installed:
