@@ -101,6 +101,15 @@ def validate_iprange(iprange):
     return False
 def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries=3):
     """Executes a shell command and returns the output and error."""
+    if type(command) == list:
+        command = " && ".join(command)
+    elif type(command) == str:
+        command = command.strip()
+    else:
+        print("Invalid command type")
+        exit(1)
+    if command == "":
+        return "", ""
     print("\n\nExecuting command: {}".format(command))
     print("\n\nPlease wait!\n")
 
@@ -618,7 +627,7 @@ def create_kubernetes_cluster():
                         docker_registry_with_slash)
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
-            output, error = execute_command(False,command,max_retries=1)
+            output, error = execute_command(command, False,max_retries=1)
                 # Configure kubectl
             # delete old config
             execute_command("rm -rf $HOME/.kube", False, max_retries=1)
