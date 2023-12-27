@@ -637,10 +637,8 @@ def create_kubernetes_cluster():
             output, error = execute_command(command, False,max_retries=1)
             join_match = r'kubeadm join .*'
             join_match_output = re.findall(join_match, output)
-            if join_match_output:
-                print("Match found")
-                for group in join_match_output:
-                    node_join_command_info += str(group) + "\n\n"
+            start_index = output.find("You can now join")
+            node_join_command_info = output[start_index:]
 
                 # Configure kubectl
             # delete old config
@@ -818,31 +816,26 @@ def install_k8s():
         3. {pg_admin_domain} : {use_public_ip_for_dashboard and loadbalancer_ip1 or loadbalancer_ip2}
         """)
     print(f"""\n
-    run the following commands in your master node to use kubectl
 
-    rm -r $HOME/.kube
-    mkdir -p $HOME/.kube
-    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    sudo chown $(id -u):$(id -g) $HOME/.kube/config
-          
-
-    to join more nodes use the following commands
-    {node_join_command_info}
-                                     
-    kubernetes cluster is installed successfully
-    kubernetes dashboard url : https://{dashboard_domain}/
+kubernetes cluster is installed successfully
+kubernetes dashboard url : https://{dashboard_domain}/
     
-    use this command to get token
-
+use this command to get token for login to dashboard
     kubectl create token admin-user --duration=720h
-
-
     kubectl create token guest-user --duration=7200h
 
+run the following commands in your master node to use kubectl
 
-    """)
-    output,e = execute_command("kubectl create token admin-user --duration=720h -n k8s", False)
-    output,e = execute_command("kubectl create token guest-user --duration=7200h -n k8s", False)
+rm -r $HOME/.kube
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+          
+{node_join_command_info}
+                                     
+
+
+""")
 
 
     if install_docker_registry:
