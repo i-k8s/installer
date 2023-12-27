@@ -110,7 +110,7 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
 
     while retries < max_retries:
         if retries > 0:
-            print("\n\n Retrying... \n\n", retries)
+            print("\n\n Retrying... \n\n")
         try:
             process = subprocess.Popen(
                 command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
