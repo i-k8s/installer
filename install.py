@@ -271,11 +271,7 @@ def collect_node_info():
                 ip = ""
     master_count = int(
         input("Enter the number of master nodes [default: 0] ?:").strip() or "0")
-    if is_master and master_count > 1:
-        ha_proxy_installed = True
-    
-    
-    
+
 
     if master_count > 0:
         is_master = "y" == input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
@@ -305,6 +301,8 @@ def collect_node_info():
         is_first_master = True
         single_node = True
     else:
+        if is_master and master_count > 1:
+            ha_proxy_installed = True
         worker_count = int(input("Enter the number of worker nodes [defult: 1] :") or "1")
         if not worker_count>0:
             print("worker count should be greater than 0")
@@ -340,7 +338,7 @@ def collect_node_info():
             "/") and docker_registry or docker_registry + "/"
     if master_count>1:
         while vip == "" or vip == None:
-            vip = input("Enter the VIP to be used: ")
+            vip = input("Enter the VIP to be used for loadbalance masters: ")
             if not validate_ipv4(vip):
                 print("Invalid ip please enter correct VIP virtual ip, IPv4 :")
                 vip = ""
@@ -414,15 +412,18 @@ def print_node_info():
     print("single_node: {}".format(single_node))
     print("has_internet: {}".format(has_internet))
     print("docker_registry: {}".format(docker_registry))
-    print("vip: {}".format(vip))
+    if ha_proxy_installed:
+        print("vip for haproxy (master loadbalancing): {}".format(vip))
     print("lbpool: {}".format(lbpool))
     print("dashboard_domain: {}".format(dashboard_domain))
     print("use_ceph: {}".format(use_ceph))
-    print("ceph_mon_ips: {}".format(ceph_mon_ips))
-    print("ceph_user: {}".format(ceph_user))
-    print("ceph_key: {}".format(ceph_key))
-    print("nfs_server: {}".format(nfs_server))
-    print("nfs_path: {}".format(nfs_path))
+    if use_ceph:
+        print("ceph_mon_ips: {}".format(ceph_mon_ips))
+        print("ceph_user: {}".format(ceph_user))
+        print("ceph_key: {}".format(ceph_key))
+    else:
+        print("nfs_server: {}".format(nfs_server))
+        print("nfs_path: {}".format(nfs_path))
     print("use_public_ip_only: {}".format(use_public_ip_only))
     print("use_public_ip_for_dashboard: {}".format(use_public_ip_for_dashboard))
     print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
@@ -430,7 +431,8 @@ def print_node_info():
     print("docker_registry_domain: {}".format(docker_registry_domain))
     print("docker_registry_ip: {}".format(docker_registry_ip))
     print("install_pg_admin: {}".format(install_pg_admin))
-    print("pg_admin_domain: {}".format(pg_admin_domain))
+    if install_pg_admin:
+        print("pg_admin_domain: {}".format(pg_admin_domain))
     print("base_domain: {}".format(base_domain))
     print("interface: {}".format(interface))
     print("use_private_ip_only: {}".format(use_private_ip_only))
