@@ -275,6 +275,8 @@ def collect_node_info():
         print("\n!Only one master node to be insitilized rest of them need to be joined.\n")
         is_first_master = input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
         is_first_master = is_first_master == "y"
+    else:
+        ha_proxy_installed = input("is it have a load balanced contrl-plne with host 'master.in:8443' ? :").strip() or "n"
 
     if not is_master or (is_master and not is_first_master):
         while join_token == "" or join_token == None:
@@ -487,7 +489,7 @@ def update_hosts_file():
     # Add entries for load balancer
     # Add entries for registry
     # Add entries for VIP as master.in
-    if master_ip:
+    if master_ip and ha_proxy_installed:
         command = "echo \"{} master.in\" >> /etc/hosts".format(master_ip)
         execute_command(command)
 
@@ -657,7 +659,8 @@ def create_kubernetes_cluster():
             join_command = "sudo kubeadm join master.in:8443 --token {} --discovery-token-ca-cert-hash {} --control-plane --certificate-key {}".format(join_token, join_ca, join_ca_key)
             output, error = execute_command(join_command)
     else:
-        join_command = "sudo kubeadm join master.in:8443 --token {} --discovery-token-ca-cert-hash {}".format(join_token, join_ca)
+        control_plan = ha_proxy_installed and "master.in:8443" or master_ip+":6443"
+        join_command = f"sudo kubeadm join {control_plan} --token {join_token} --discovery-token-ca-cert-hash {join_ca}"
         output, error = execute_command(join_command)
     # Configure kubectl
     # delete old config
