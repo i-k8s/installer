@@ -146,10 +146,9 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
             retries += 1
 
         time.sleep(1)  # Add a small delay before retrying
-    print(f"Command '{command}' failed after {max_retries} retries.")
+    print(f"Command \n\n'{command}' \n\nfailed after {max_retries} retries.")
     if exit_on_error:
-        print("Exiting...")
-        process.kill()
+        print("\n\n\nExiting...")
         exit(1)
     return output, error
 
