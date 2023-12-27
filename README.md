@@ -12,12 +12,6 @@ sudo apt install python3-pip
 
 ```
 
-install required dependencies
-
-```bash
-pip3 install psutil
-pip3 install pyOpenSSL
-```
 
 
 there will be no existing kubernetes cluster in the server

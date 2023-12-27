@@ -127,7 +127,7 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
             print(f"Error occurred: {e}")
             retries += 1
 
-        time.sleep(5)  # Add a small delay before retrying
+        time.sleep(1)  # Add a small delay before retrying
     print(f"Command '{command}' failed after {max_retries} retries.")
     if exit_on_error:
         print("Exiting...")
@@ -477,7 +477,7 @@ def install_docker_windows():
 def install_containerd():
     # Check if containerd is installed
     if not check_installed("curl"):
-        execute_command("DEBIAN_FRONTEND=noninteractive sudo apt install -y curl")
+        execute_command("DEBIAN_FRONTEND=noninteractive sudo apt install -y curl", False, max_retries=1)
     if not check_installed("containerd"):
         # Install containerd
         # Add containerd configuration
@@ -492,9 +492,9 @@ def install_containerd():
         execute_command("sudo cp containerd.service /etc/systemd/system/containerd.service")
         execute_command("sudo systemctl daemon-reload")
         time.sleep(2)
-        execute_command("sudo systemctl enable containerd --now", False)
+        execute_command("sudo systemctl enable containerd --now", False, max_retries=1)
         time.sleep(2)
-        execute_command("sudo systemctl restart containerd", False)
+        execute_command("sudo systemctl restart containerd", False, max_retries=1)
         time.sleep(2)
         execute_command("sudo systemctl status containerd")
 
@@ -522,7 +522,7 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF""")
     
-    execute_command("sudo sysctl --system", False)
+    execute_command("sudo sysctl --system", False, max_retries=1)
     # If not installed, follow the provided steps to install containerd
 
 
@@ -533,15 +533,15 @@ def install_kubernetes_windows():
 # Function to install Kubernetes components
 def install_kubernetes():
     # Add Kubernetes GPG key
-    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", False)
+    execute_command("sudo rm -rf /etc/apt/keyrings/kubernetes-archive-keyring.gpg", False, max_retries=1)
     execute_command(
         "curl -fsSL https://dl.k8s.io/apt/doc/apt-key.gpg | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg")
     # Add Kubernetes apt repository
-    execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", False)
+    execute_command("sudo rm -rf /etc/apt/sources.list.d/kubernetes.list", False, max_retries=1)
     execute_command(
         "echo \"deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list")
     # Install kubeadm, kubelet & kubectl
-    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False)
+    execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False, max_retries=1)
     execute_command(
         "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-mark hold kubelet kubeadm kubectl")
@@ -568,9 +568,9 @@ def install_keepalived_haproxy():
     global ha_proxy_installed
     if is_master and master_count > 1:
         ha_proxy_installed = True
-        execute_command("sudo apt update", False)
+        execute_command("sudo apt update", False, max_retries=1)
         execute_command(
-            "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy")
+            "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy", False, max_retries=1)
         execute_command("""cat >> /etc/keepalived/check_apiserver.sh <<EOF
 #!/bin/sh
 
@@ -586,7 +586,7 @@ fi
 EOF""".format(vip=vip))
         execute_command("sudo chmod +x /etc/keepalived/check_apiserver.sh")
 
-        execute_command("""cat >> /etc/keepalived/keepalived.conf <<EOF
+        execute_command("""sudo cat >> /etc/keepalived/keepalived.conf <<EOF
 vrrp_script check_apiserver {
   script "/etc/keepalived/check_apiserver.sh"
   interval 3
@@ -615,12 +615,12 @@ vrrp_instance VI_1 {
 }
 EOF""".format(vip=vip, interface=interface))
 
-        execute_command("systemctl enable --now keepalived")
-        execute_command("sudo systemctl status keepalived")
-        execute_command(generate_haproxy_config(master_count))
+        execute_command("systemctl enable --now keepalived", False, max_retries=1)
+        execute_command("sudo systemctl status keepalived", False, max_retries=1)
+        execute_command(generate_haproxy_config(master_count), False, max_retries=1)
         execute_command(
-            "systemctl enable haproxy && systemctl restart haproxy")
-        execute_command("sudo systemctl status haproxy")
+            "systemctl enable haproxy && systemctl restart haproxy", False, max_retries=1)
+        execute_command("sudo systemctl status haproxy", False, max_retries=1)
 
 # Function to create Kubernetes cluster using kubeadm
 
@@ -633,7 +633,7 @@ def create_kubernetes_cluster():
     output = None
     error = None
     # reset existing cluster
-    execute_command("sudo kubeadm reset -f", False)
+    execute_command("sudo kubeadm reset -f",False, max_retries=1)
     if (has_internet):
         output, error = execute_command(
             "sudo kubeadm config images pull --kubernetes-version=v1.25.8")
@@ -654,7 +654,7 @@ def create_kubernetes_cluster():
             output, error = execute_command(command)
                 # Configure kubectl
             # delete old config
-            execute_command("rm -rf $HOME/.kube", False)
+            execute_command("rm -rf $HOME/.kube", False, max_retries=1)
             execute_command("mkdir -p $HOME/.kube")
             execute_command("sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config")
             execute_command("sudo chown $(id -u):$(id -g) $HOME/.kube/config")
@@ -688,14 +688,14 @@ def install_helm():
     # Install Helm and configure as required
     #check if helm is installed
     if not check_installed("helm"):
-        execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False)
+        execute_command("sudo rm -rf /usr/share/keyrings/helm.gpg", False, max_retries=1)
         execute_command(
             "curl https://baltocdn.com/helm/signing.asc | gpg --batch --yes --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null", False)
         execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install apt-transport-https --yes""")
-        execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False)
+        execute_command("sudo rm -rf /etc/apt/sources.list.d/helm-stable-debian.list", False, max_retries=1)
         execute_command(
             """echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list""")
-        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", False)
+        execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get update""", False, max_retries=1)
         execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-get install  -y helm""")
         execute_command("""DEBIAN_FRONTEND=noninteractive sudo apt-mark hold helm""")
     else:
@@ -705,7 +705,7 @@ def install_helm():
 def deploy_calico():
     execute_command(
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
-    execute_command("""helm repo update""", False)
+    execute_command("""helm repo update""", False, max_retries=1)
     execute_command(
         """helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
     # sleep for 10 seconds
