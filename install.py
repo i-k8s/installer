@@ -170,15 +170,13 @@ def get_lan_interface_name():
     
     # Get a list of all the network interfaces
     all_interfaces =  list(psutil.net_if_addrs().keys())
-    print(all_interfaces)
-    print("size of all_interfaces",len(all_interfaces))
     # Get the LAN interface name
     interfaces = [interface for interface in all_interfaces if interface.startswith("en")]
     if len(interfaces) > 0:
         interface = interfaces[0]
         return interface
     else:
-        print("Error getting LAN interface name returning first interface")
+        print("\n\nError getting LAN interface name returning first interface")
         interface = all_interfaces[0]
         return interface
 
@@ -197,8 +195,8 @@ def get_lan_interface_ip():
     print(lines)
     if len(lines) > 0:
         if len(lines) > 1:
-            print("Multiple IP addresses found for interface {}".format(interface))
-            print("Please choose the IP address to be used: ")
+            print("\n\n\nMultiple IP addresses found for interface {}".format(interface))
+            print("\nPlease choose the IP address to be used: \n\n")
             for i in range(len(lines)):
                 print("{}: {}".format(i+1, lines[i]))
             choice = input()
@@ -209,7 +207,7 @@ def get_lan_interface_ip():
                 exit(1)
         return lines[0]
     else:
-        print("Error getting IP address for interface {}".format(interface))
+        print("\n\nError getting IP address for interface {}".format(interface))
         exit(1)
 
 
@@ -261,18 +259,19 @@ def collect_node_info():
 
 
     global interface
+    print("========================= ik8s Kubernets Cluster setup =========================\n\n")
+    print("\n\nCollecting node information...")
+    print("\nPlease provide the following information to setup the cluster: \n\n")
     while master_ip == "" or master_ip == None:
         master_ip = input("Enter the control-plane IP (Virtual IP incase of loadbalanced masternoads): ")
         if not validate_ipv4(master_ip):
-            print("Invalid ip please enter correct IP")
+            print("\nInvalid ip please enter correct IP :")
             master_ip = ""
     
-    is_master = input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
-    print("is_master",is_master)
+    is_master = input("\nIs it a master node (y/n) [default: n] ? :").strip() or "n"
     is_master = is_master == "y"
-    print("is_master",is_master)
     if is_master:
-        print("only one master node to be insitilized rest of them need to be joined.")
+        print("\n!Only one master node to be insitilized rest of them need to be joined.\n")
         is_first_master = input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
         is_first_master = is_first_master == "y"
 
@@ -296,10 +295,17 @@ def collect_node_info():
         else:
             return
     
-    print("\n\n\n 0 master node means single node cluster setup...\n\n")
+    print("\n !! 0 master node means single node cluster setup...!!\n")
     master_count = int(
         input("Enter the number of master nodes [default: 0] ?:").strip() or "0")
-    if master_count > 1:
+    if master_count == 0:
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("\t"*3)
+        print(" entering single node cluster setup... \n")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        single_node = True
+        is_first_master = True
+    elif master_count > 1:
         ha_proxy_installed = True
     else:
         ha_proxy_installed = input("Is HAProxy need to be installed for estending master nodes? :").strip() or "n"
@@ -342,10 +348,7 @@ def collect_node_info():
                 print("Invalid ip address")
 
 
-    if master_count == 0:
-        print("0 master node selected starting with single node cluster setup...")
-        single_node = True
-        is_first_master = True
+
     
     if not is_first_master:
         return
