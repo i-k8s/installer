@@ -102,13 +102,15 @@ def validate_iprange(iprange):
 def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries=3):
     """Executes a shell command and returns the output and error."""
     print("\n\nExecuting command: {}".format(command))
-    print("\nPlease wait...\n")
+    print("\n\nPlease wait!\n")
 
     retries = 0
     output = ""
     error = ""
 
     while retries < max_retries:
+        if retries > 0:
+            print("\n\n Retrying... \n\n", retries)
         try:
             process = subprocess.Popen(
                 command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -119,22 +121,28 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
                 error = error.decode()
 
                 if output:
-                    print("Output:\n")
+                    print("command output:\n\n\n")
                     print(output)
+                    print("\n\n\n")
+                    if error:
+                        print("command error/warning:\n\n\n")
+                        print(error)
+                        print("\n\n\n")
 
-                if error:
-                    print("Error occurred:\n")
-                    print(error)
+                elif error:
                     raise Exception(error)
                 return output, error
 
             except subprocess.TimeoutExpired:
-                print("Timeout occurred. Retrying...")
+                print("\n\n\nTimeout occurred.")
                 process.kill()
                 retries += 1
 
         except Exception as e:
-            print(f"Error occurred: {e}")
+            print("\n\n\n\nError occurred:\n")
+            print(e)
+            print("\n\n\n\n")
+            process.kill()
             retries += 1
 
         time.sleep(1)  # Add a small delay before retrying
@@ -611,7 +619,7 @@ def create_kubernetes_cluster():
                         docker_registry_with_slash)
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
-            output, error = execute_command(command,max_retries=1)
+            output, error = execute_command(False,command,max_retries=1)
                 # Configure kubectl
             # delete old config
             execute_command("rm -rf $HOME/.kube", False, max_retries=1)
