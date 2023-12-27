@@ -9,7 +9,6 @@ import os
 import sys
 
 master_count = 0
-worker_count = 1
 has_internet = False
 docker_registry = None
 master_ip = None
@@ -226,7 +225,6 @@ def generate_haproxy_config(num_masters):
 def collect_node_info():
     # Collect node information here based on the provided data
     global master_count
-    global worker_count
     global interface
     global ip
     global is_master
@@ -428,41 +426,44 @@ def collect_node_info():
 
 def print_node_info():
     # Print collected node information
-    print("master_count: {}".format(master_count))
-    print("worker_count: {}".format(worker_count))
-    print("master_node_ips: {}".format(master_node_ips))
-    print("interface: {}".format(interface))
-    print("ip: {}".format(ip))
-    print("is_master: {}".format(is_master))
-    print("is_first_master: {}".format(is_first_master))
-    print("ha_proxy_installed: {}".format(ha_proxy_installed))
-    print("docker_registry_with_slash: {}".format(docker_registry_with_slash))
+    print("\n\n ========================= Cluster Setup Information =========================\n\n")
     print("single_node: {}".format(single_node))
-    print("has_internet: {}".format(has_internet))
-    print("docker_registry: {}".format(docker_registry))
-    if ha_proxy_installed:
-        print("master_ip for haproxy (master loadbalancing VIP): {}".format(master_ip))
-    print("lbpool: {}".format(lbpool))
-    print("dashboard_domain: {}".format(dashboard_domain))
-    print("use_ceph: {}".format(use_ceph))
-    if use_ceph:
-        print("ceph_mon_ips: {}".format(ceph_mon_ips))
-        print("ceph_user: {}".format(ceph_user))
-        print("ceph_key: {}".format(ceph_key))
-    else:
-        print("nfs_server: {}".format(nfs_server))
-        print("nfs_path: {}".format(nfs_path))
-    print("use_public_ip_only: {}".format(use_public_ip_only))
-    print("use_public_ip_for_dashboard: {}".format(use_public_ip_for_dashboard))
-    print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
-    print("install_docker_registry: {}".format(install_docker_registry))
-    print("docker_registry_domain: {}".format(docker_registry_domain))
-    print("install_pg_admin: {}".format(install_pg_admin))
-    if install_pg_admin:
-        print("pg_admin_domain: {}".format(pg_admin_domain))
-    print("base_domain: {}".format(base_domain))
-    print("interface: {}".format(interface))
-    print("use_private_ip_only: {}".format(use_private_ip_only))
+    print("is_master: {}".format(is_master))
+    if is_master:
+        print("ha_proxy_installed: {}".format(ha_proxy_installed))
+        print("is_first_master: {}".format(is_first_master))
+        if ha_proxy_installed:
+            print("master_count: {}".format(master_count))
+            print("master_node_ips: {}".format(master_node_ips))
+            print("interface: {}".format(interface))
+            print("ip: {}".format(ip))
+            print("master_ip for haproxy (master loadbalancing VIP): {}".format(master_ip))
+        if is_first_master:
+            print("docker_registry_with_slash: {}".format(docker_registry_with_slash))
+            print("has_internet: {}".format(has_internet))
+            print("docker_registry: {}".format(docker_registry))
+            print("lbpool: {}".format(lbpool))
+            print("dashboard_domain: {}".format(dashboard_domain))
+            print("use_ceph: {}".format(use_ceph))
+            if use_ceph:
+                print("ceph_mon_ips: {}".format(ceph_mon_ips))
+                print("ceph_user: {}".format(ceph_user))
+                print("ceph_key: {}".format(ceph_key))
+            else:
+                print("nfs_server: {}".format(nfs_server))
+                print("nfs_path: {}".format(nfs_path))
+            print("use_public_ip_only: {}".format(use_public_ip_only))
+            print("use_public_ip_for_dashboard: {}".format(use_public_ip_for_dashboard))
+            print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
+            print("install_docker_registry: {}".format(install_docker_registry))
+            print("docker_registry_domain: {}".format(docker_registry_domain))
+            print("install_pg_admin: {}".format(install_pg_admin))
+            if install_pg_admin:
+                print("pg_admin_domain: {}".format(pg_admin_domain))
+            print("base_domain: {}".format(base_domain))
+            print("use_private_ip_only: {}".format(use_private_ip_only))
+    print("===============================================================================\n\n\n")
+    print("is_windows: {}".format(is_windows))
 
 
 
