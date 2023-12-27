@@ -271,6 +271,8 @@ def collect_node_info():
                 ip = ""
     master_count = int(
         input("Enter the number of master nodes [default: 0] ?:").strip() or "0")
+    if is_master and master_count > 1:
+        ha_proxy_installed = True
     
     
     
@@ -561,8 +563,7 @@ def install_keepalived_haproxy_windows():
 def install_keepalived_haproxy():
     # Install and configure Keepalived & HAProxy on multiple master nodes if needed
     global ha_proxy_installed
-    if is_master and master_count > 1:
-        ha_proxy_installed = True
+    if ha_proxy_installed:
         execute_command("sudo apt update", False, max_retries=1)
         execute_command(
             "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy", False, max_retries=1)
