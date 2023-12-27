@@ -576,6 +576,8 @@ def install_keepalived_haproxy():
 
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
         execute_command("sudo systemctl status keepalived", False, max_retries=1)
+        configuratin = generate_haproxy_config(master_count)
+        format_file("haproxy.cfg", [("_SERVER_", configuratin)], "/etc/haproxy/haproxy.cfg")
         execute_command(generate_haproxy_config(master_count), False, max_retries=1)
         execute_command(
             "systemctl enable haproxy && systemctl restart haproxy", False, max_retries=1)
@@ -610,7 +612,7 @@ def create_kubernetes_cluster():
                         docker_registry_with_slash)
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
-            output, error = execute_command(command)
+            output, error = execute_command(command,max_retries=1)
                 # Configure kubectl
             # delete old config
             execute_command("rm -rf $HOME/.kube", False, max_retries=1)
