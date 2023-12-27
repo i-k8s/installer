@@ -8,16 +8,16 @@ import os
 
 import sys
 
-master_ips = []
-worker_ips = []
 master_count = 0
 worker_count = 1
 has_internet = False
 docker_registry = None
-docker_registry_ip = None
-vip = None
+master_ip = None
+master_node_ips = []
 lbpool = ""
-join_command = ""
+join_token = ""
+join_ca = ""
+join_ca_key = ""
 interface = ""
 ip = ""
 is_master = False
@@ -227,8 +227,6 @@ def collect_node_info():
     # Collect node information here based on the provided data
     global master_count
     global worker_count
-    global master_ips
-    global worker_ips
     global interface
     global ip
     global is_master
@@ -238,7 +236,8 @@ def collect_node_info():
     global single_node
     global has_internet
     global docker_registry
-    global vip
+    global master_ip
+    global master_node_ips
     global lbpool
     global dashboard_domain
     global docker_registry_domain
@@ -248,7 +247,6 @@ def collect_node_info():
     global use_public_ip_for_docker_registry
     global install_docker_registry
     global install_pg_admin
-    global docker_registry_ip
     global use_ceph
     global ceph_mon_ips
     global ceph_user
@@ -259,78 +257,97 @@ def collect_node_info():
     global base_domain
     global use_private_ip_only
     global is_windows
-    
+    global join_ca
+    global join_token
+    global join_ca_key
+
 
     global interface
-    while interface == "":
-        base_domain = input("Enter the base domain to be used [defult : {}] : ".format(base_domain)) or base_domain
-        interface = get_lan_interface_name()
-        print("""LAN interface is " {} " is this correct (y/n) [default: y] ?:""".format(interface))
-        if (input() or "y") == "n":
-            print("Please choose the LAN interface to be used: ")
-            for i in range(len(all_interfaces)):
-                print("{}: {}".format(i+1, all_interfaces[i]))
-            choice = input()
-            if choice.isdigit() and int(choice) <= len(all_interfaces):
-                interface = all_interfaces[int(choice) - 1]
-            else:
-                print("Invalid input")
-                exit(1)
+    while master_ip == "" or master_ip == None:
+        master_ip = input("Enter the control-plane IP (Virtual IP incase of loadbalanced masternoads): ")
+        if not validate_ipv4(master_ip):
+            print("Invalid ip please enter correct IP")
+            master_ip = ""
+    
+    is_master = "y" == input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
+    if is_master:
+        print("only one master node to be insitilized rest of them need to be joined.")
+        is_first_master = "y" == input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
 
-    while ip == "":
-        ip = get_lan_interface_ip()
-        print("LAN interface IP is {} is this correct (y/n) [default: y] ?".format(ip))
-        if (input() or "y") == "n":
-            ip = input("Enter the LAN interface IP: ")
-            if not validate_ipv4(ip):
-                print("Invalid ip please enter correct IP")
-                ip = ""
+    if not is_master or not is_first_master:
+        while join_token == "" or join_token == None:
+            join_token = input("Enter the join token: ")
+            if not join_token:
+                print("Invalid join token please enter correct join token (--token) :")
+                join_token = ""
+        while join_ca == "" or join_ca == None:
+            join_ca = input("Enter the join ca (--discovery-token-ca-cert-hash): ")
+            if not join_ca:
+                print("Invalid join ca please enter correct join ca")
+                join_ca = ""
+        if not is_first_master:
+            while join_ca_key == "" or join_ca_key == None:
+                join_ca_key = input("Enter the join ca key (--discovery-token-unsafe-skip-ca-verification): ")
+                if not join_ca_key:
+                    print("Invalid join ca key please enter correct join ca key")
+                    join_ca_key = ""
+        else:
+            return
+    
+    print(" 0 master node means single node cluster setup...")
     master_count = int(
         input("Enter the number of master nodes [default: 0] ?:").strip() or "0")
-
-
-    if master_count > 0:
-        is_master = "y" == input("Is it a master node (y/n) [default: n] ? :").strip() or "n"
-        if is_master:
-            master_ips.append(ip)
-            if master_count == 1:
-                is_first_master = True
-            elif master_count>1:
-                print("only one master node to be insitilized rest of them need to be joined.")
-                is_first_master = "y" == input("Is it a master node to be intialized (y/n) [default: n] ?:").strip() or "n"
-                while len(master_ips) < master_count:
-                    print("master nodes:", master_ips)
-
-                    node_ip = input("Enter the IP address of master node {}: ".format(len(master_ips)+1))
-                    if validate_ipv4(node_ip):
-                        master_ips.append(node_ip)
-                    else:
-                        print("Invalid ip address")
-
-    if not is_master:
-        worker_ips.append(ip)
-
-    if master_count == 0:
-        print("0 master node selected starting with single node cluster setup...")
-        worker_count = 1
-        is_master = True
-        is_first_master = True
-        single_node = True
+    if master_count > 1:
+        ha_proxy_installed = True
     else:
-        if is_master and master_count > 1:
-            ha_proxy_installed = True
-        worker_count = int(input("Enter the number of worker nodes [defult: 1] :") or "1")
-        if not worker_count>0:
-            print("worker count should be greater than 0")
-        while len(worker_ips) < worker_count:
-            print("worker nodes:", worker_ips)
-            node_ip = input("Enter the IP address of worker node {}: ".format(len(worker_ips)+1))
+        ha_proxy_installed = "y" == input("Is HAProxy need to be installed for estending master nodes? :").strip() or "n"
+        
+        
+    if ha_proxy_installed:
+    
+        while interface == "":
+            interface = get_lan_interface_name()
+            print("""LAN interface is " {} " is this correct (y/n) [default: y] ?:""".format(interface))
+            if (input() or "y") == "n":
+                print("Please choose the LAN interface to be used: ")
+                for i in range(len(all_interfaces)):
+                    print("{}: {}".format(i+1, all_interfaces[i]))
+                choice = input()
+                if choice.isdigit() and int(choice) <= len(all_interfaces):
+                    interface = all_interfaces[int(choice) - 1]
+                else:
+                    print("Invalid input")
+                    exit(1)
+
+        while ip == "":
+            ip = get_lan_interface_ip()
+            print("LAN interface IP is {} is this correct (y/n) [default: y] ?".format(ip))
+            if (input() or "y") == "n":
+                ip = input("Enter the LAN interface IP: ")
+                if not validate_ipv4(ip):
+                    print("Invalid ip please enter correct IP")
+                    ip = ""
+
+        master_node_ips.append(ip)
+        while len(master_node_ips) < master_count:
+            print("master nodes:", master_node_ips)
+
+            node_ip = input("Enter the IP address of master node {}: ".format(len(master_node_ips)+1))
             if validate_ipv4(node_ip):
-                worker_ips.append(node_ip)
+                master_node_ips.append(node_ip)
             else:
                 print("Invalid ip address")
 
 
+    if master_count == 0:
+        print("0 master node selected starting with single node cluster setup...")
+        single_node = True
+        is_first_master = True
+    
+    if not is_first_master:
+        return
+
+    base_domain = input("Enter the base domain to be used [defult : {}] : ".format(base_domain)) or base_domain
     while True:
         has_internet = input(
             "Does the cluster have permenant internet access? (y/n) [defult: y] : ") or "y"
@@ -344,20 +361,13 @@ def collect_node_info():
         if install_docker_registry:
             docker_registry_domain = input("Enter the docker registry domain to be used [defult : harbor.{}]: ".format(base_domain)) or "harbor.{}".format(base_domain)
             docker_registry = docker_registry_domain + "/library/"
-            docker_registry_ip = None
         else:
             docker_registry = input("Enter the docker registry to be used: ")
-            docker_registry_ip = input("Enter the docker registry IP to be used: ")
         
         
         docker_registry_with_slash = docker_registry.endswith(
             "/") and docker_registry or docker_registry + "/"
-    if master_count>1:
-        while vip == "" or vip == None:
-            vip = input("Enter the VIP to be used for loadbalance masters: ")
-            if not validate_ipv4(vip):
-                print("Invalid ip please enter correct VIP virtual ip, IPv4 :")
-                vip = ""
+
     if is_windows:
         poolstart = "127.0.0.100"
     else:
@@ -417,8 +427,7 @@ def print_node_info():
     # Print collected node information
     print("master_count: {}".format(master_count))
     print("worker_count: {}".format(worker_count))
-    print("master_ips: {}".format(master_ips))
-    print("worker_ips: {}".format(worker_ips))
+    print("master_node_ips: {}".format(master_node_ips))
     print("interface: {}".format(interface))
     print("ip: {}".format(ip))
     print("is_master: {}".format(is_master))
@@ -429,7 +438,7 @@ def print_node_info():
     print("has_internet: {}".format(has_internet))
     print("docker_registry: {}".format(docker_registry))
     if ha_proxy_installed:
-        print("vip for haproxy (master loadbalancing): {}".format(vip))
+        print("master_ip for haproxy (master loadbalancing VIP): {}".format(master_ip))
     print("lbpool: {}".format(lbpool))
     print("dashboard_domain: {}".format(dashboard_domain))
     print("use_ceph: {}".format(use_ceph))
@@ -445,7 +454,6 @@ def print_node_info():
     print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
     print("install_docker_registry: {}".format(install_docker_registry))
     print("docker_registry_domain: {}".format(docker_registry_domain))
-    print("docker_registry_ip: {}".format(docker_registry_ip))
     print("install_pg_admin: {}".format(install_pg_admin))
     if install_pg_admin:
         print("pg_admin_domain: {}".format(pg_admin_domain))
@@ -469,16 +477,8 @@ def update_hosts_file():
     # Add entries for load balancer
     # Add entries for registry
     # Add entries for VIP as master.in
-    if vip:
-        command = "echo \"{} master.in\" >> /etc/hosts".format(vip)
-        execute_command(command)
-    for i in range(len(master_ips)):
-        command = "echo \"{} master{}.in\" >> /etc/hosts".format(
-            master_ips[i], i+1)
-        execute_command(command)
-    if docker_registry and docker_registry_ip:
-        command = "echo \"{} {}\" >> /etc/hosts".format(
-            docker_registry_ip, docker_registry)
+    if master_ip:
+        command = "echo \"{} master.in\" >> /etc/hosts".format(master_ip)
         execute_command(command)
 
 
@@ -585,10 +585,10 @@ def install_keepalived_haproxy():
         execute_command("sudo apt update", False, max_retries=1)
         execute_command(
             "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy", False, max_retries=1)
-        format_file("check_apiserver.sh", [("_VIP_", vip)], "/etc/keepalived/check_apiserver.sh")
+        format_file("check_apiserver.sh", [("_VIP_", master_ip)], "/etc/keepalived/check_apiserver.sh")
         execute_command("sudo chmod +x /etc/keepalived/check_apiserver.sh")
 
-        format_file("keepalived.conf", [("_INTERFACE_", interface),("_VIP_",vip)], "/etc/keepalived/keepalived.conf")
+        format_file("keepalived.conf", [("_INTERFACE_", interface),("_VIP_",master_ip)], "/etc/keepalived/keepalived.conf")
 
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
         execute_command("sudo systemctl status keepalived", False, max_retries=1)
