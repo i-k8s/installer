@@ -868,6 +868,8 @@ def install_k8s():
 
 # Main function to orchestrate the setup process
 def main():
+    install("shutil")
+    install("psutil")
     proceed = False
     while not proceed:
         collect_node_info()
