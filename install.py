@@ -600,13 +600,13 @@ def create_kubernetes_cluster():
     # Initialize the cluster using kubeadm
     if is_master:
         if is_first_master:
-            command = "sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version=v1.25.8"
-            if has_internet:
+            command = "sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version=v1.25.8 --upload-certs "
+            if not has_internet:
                 command = command + \
                     " --image-repository {}registry.k8s.io".format(
                         docker_registry_with_slash)
             if ha_proxy_installed:
-                command = command + " --control-plane-endpoint \"master.in:8443\""
+                command = command + " --control-plane-endpoint=\"master.in:8443\""
             output, error = execute_command(command)
                 # Configure kubectl
             # delete old config
