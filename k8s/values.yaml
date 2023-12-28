@@ -45,6 +45,7 @@ kong:
         value: 64 160k
   service:
     type: LoadBalancer
+    loadBalancerIP: 172.24.10.100
     annotations:
       metallb.universe.tf/address-pool: ip-addres-pool
   proxy:
@@ -81,6 +82,7 @@ kong-internal:
         value: 64 160k
   service:
     type: LoadBalancer
+    loadBalancerIP: 172.24.10.101
     annotations:
       metallb.universe.tf/address-pool: ip-addres-pool
   proxy:
