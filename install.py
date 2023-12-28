@@ -568,7 +568,7 @@ def install_kubernetes():
     # Install kubeadm, kubelet & kubectl
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False, max_retries=1)
     execute_command(
-        "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet=1.25.8-00 kubeadm=1.25.8-00 kubectl=1.25.8-00")
+        "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet kubeadm kubectl")
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-mark hold kubelet kubeadm kubectl")
     # Disable swap
     execute_command("sudo swapoff -a")
