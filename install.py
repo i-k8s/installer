@@ -759,7 +759,7 @@ def install_k8s(dependencies=False):
     if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
         if use_private_ip_only:
-            command = command + " --set kong.ingressController.ingressClass=privateIngress"
+            command = command + " --set kong.ingressController.ingressClass=pvting"
     
     if not use_public_ip_only:
         # check  certificate and key exists and it was modified more than 5 years ago
@@ -782,18 +782,18 @@ def install_k8s(dependencies=False):
         command = command + """ --set harbor.ingress.core.hostname="{}" """.format(docker_registry_domain)
         command = command + """ --set harbor.adminPassword="admin123" """
         if use_public_ip_for_docker_registry:
-            command = command + """ --set harbor.ingress.core.ingressClassName=publicIngress"""
+            command = command + """ --set harbor.ingress.core.ingressClassName=pubing"""
             command = command + """ --set harbor.ingress.core.annotations."cert-manager\\.io/cluster-issuer"=cluster-issuer-public"""
         else:
-            command = command + """ --set harbor.ingress.core.ingressClassName=privateIngress"""
+            command = command + """ --set harbor.ingress.core.ingressClassName=pvting"""
             command = command + """ --set harbor.ingress.core.annotations."cert-manager\\.io/cluster-issuer"=cluster-issuer-private"""
 
    
     
     if use_public_ip_for_dashboard:
-        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
+        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=pubing --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
     else:
-        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=privateIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-private"
+        command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=pvting --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-private"
     output, error = execute_command(command, timeout_seconds=None)
 
     print(f"""

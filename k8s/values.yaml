@@ -10,7 +10,7 @@ kubernetes-dashboard:
     enabled: false
   app:
     ingress:
-      ingressClassName: publicIngress
+      ingressClassName: pubing
       issuer: selfsigned
       enabled: true
       hosts:
@@ -58,7 +58,7 @@ kong:
     clusterIP: None
   ingressController:
     enabled: true
-    ingressClass: publicIngress
+    ingressClass: pubing
     livenessProbe: 
       enabled: false
     readinessProbe:
@@ -95,7 +95,7 @@ kong-internal:
     clusterIP: None
   ingressController:
     enabled: true
-    ingressClass: privateIngress
+    ingressClass: pvting
     livenessProbe: 
       enabled: false
     readinessProbe:
@@ -104,11 +104,11 @@ kong-internal:
 nginx-ingress-controller:
   enabled: false
   ingressClassResource:
-    name: publicIngress
+    name: pubing
 nginx-ingress-controller-internal:
   enabled: false
   ingressClassResource:
-    name: privateIngress
+    name: pvting
 ceph-csi-cephfs:
   enabled: false
   csiConfig:
@@ -184,7 +184,7 @@ harbor:
   ingress:
     core:
       hostname: core.harbor.domain
-      ingressClassName: publicIngress
+      ingressClassName: pubing
       annotations:
         ingress.kubernetes.io/ssl-redirect: 'true'
         ingress.kubernetes.io/proxy-body-size: '0'
