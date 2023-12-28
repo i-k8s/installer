@@ -360,14 +360,18 @@ def collect_node_info():
             break
         print("Invalid input try again !")
     has_internet = has_internet == "y"
+    install_docker_registry = input("Do you want to install harbor docker registry? (y/n) [defult: n] : ") or "n"
+    install_docker_registry = install_docker_registry == "y"
+    if install_docker_registry:
+        docker_registry_domain = input("Enter the docker registry domain to be used [defult : harbor.{}]: ".format(base_domain)) or "harbor.{}".format(base_domain)
+        docker_registry = docker_registry_domain + "/library/"
     if not has_internet:
-        install_docker_registry = input("Do you want to install harbor docker registry? (y/n) [defult: n] : ") or "n"
-        install_docker_registry = install_docker_registry == "y"
-        if install_docker_registry:
-            docker_registry_domain = input("Enter the docker registry domain to be used [defult : harbor.{}]: ".format(base_domain)) or "harbor.{}".format(base_domain)
-            docker_registry = docker_registry_domain + "/library/"
-        else:
+
+        while docker_registry == "" or docker_registry == None:
             docker_registry = input("Enter the docker registry to be used: ")
+            docker_registry = docker_registry.strip().replace("https://", "").replace("http://", "")
+            # check if docker registry is valid url
+        
         
         
         docker_registry_with_slash = docker_registry.endswith(
@@ -746,6 +750,7 @@ def install_k8s(dependencies=False):
         output, error = execute_command(command,timeout_seconds=None)
 
         time.sleep(10)
+    execute_command("kubectl delete StorageClass nfs -n k8s", False,timeout_seconds=None)
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
 --set nfs-server-provisioner.storageClass.parameters.server="{}" \
@@ -775,12 +780,13 @@ def install_k8s(dependencies=False):
     if install_docker_registry:
         command = command + " --set harbor.enabled=true"
         command = command + """ --set harbor.ingress.core.hostname="{}" """.format(docker_registry_domain)
+        command = command + """ --set harbor.adminPassword="admin123" """
         if use_public_ip_for_docker_registry:
             command = command + """ --set harbor.ingress.core.ingressClassName=publicIngress"""
-            command = command + """ --set harbor.ingress.core.annotations."cert-manager\.io/cluster-issuer"=cluster-issuer-public"""
+            command = command + """ --set harbor.ingress.core.annotations."cert-manager\\.io/cluster-issuer"=cluster-issuer-public"""
         else:
             command = command + """ --set harbor.ingress.core.ingressClassName=privateIngress"""
-            command = command + """ --set harbor.ingress.core.annotations."cert-manager\.io/cluster-issuer"=cluster-issuer-private"""
+            command = command + """ --set harbor.ingress.core.annotations."cert-manager\\.io/cluster-issuer"=cluster-issuer-private"""
 
    
     

@@ -166,6 +166,20 @@ nfs-server-provisioner:
       readOnly: "false"
 harbor:
   enabled: false
+  core:
+    secretKey: "oLoTiLTIVerySiLI"
+    secret: "cKETERSEIaTErTHR"
+    csrfKey: "rIneoPsiSeaKInEo"
+  registry:
+    ## @param registry.secret Secret is used to secure the upload state from client and registry storage backend. See: <https://github.com/docker/distribution/blob/master/docs/configuration.md>
+    ## and registry storage backend.
+    ## See: https://github.com/docker/distribution/blob/master/docs/configuration.md#http
+    ## If a secret key is not specified, Helm will generate one.
+    ## Must be a string of 16 chars.
+    ##
+    secret: "uIeTAUrItkeSpiSI"
+  jobservice:
+    secret: "EwCarsEaRipuscHA"
   ingress:
     core:
       hostname: core.harbor.domain
