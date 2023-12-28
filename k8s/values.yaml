@@ -157,7 +157,7 @@ ceph-csi-rbd:
     userID: <plaintext ID>
     userKey: <Ceph auth key corresponding to userID above>
 nfs:
-  enabled: false
+  enabled: true
   nfs:
     server:
     path: /nfs-storage
