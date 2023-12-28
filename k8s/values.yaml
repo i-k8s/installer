@@ -21,7 +21,6 @@ kubernetes-dashboard:
         nginx.ingress.kubernetes.io/ssl-redirect: 'true'
         nginx.ingress.kubernetes.io/proxy-body-size: '0'
         cert-manager.io/cluster-issuer: cluster-issuer-public
-        konghq.com/strip-path: 'true'
         konghq.com/protocols: https
         konghq.com/https-redirect-status-code: '308'
         konghq.com/write-timeout: '120000'
