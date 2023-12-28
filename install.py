@@ -26,7 +26,6 @@ docker_registry_with_slash = ""
 single_node = False
 docker_registry_domain = ""
 dashboard_domain = ""
-pg_admin_domain = ""
 use_ceph = False
 ceph_mon_ips = []
 ceph_user = ""
@@ -38,7 +37,6 @@ use_private_ip_only = False
 use_public_ip_for_dashboard = False
 install_docker_registry = False
 use_public_ip_for_docker_registry = False
-install_pg_admin = False
 base_domain = "ik8s.amprajin.in"
 is_windows = platform.system() == "Windows"
 CERT_FILE="tls.crt"
@@ -237,12 +235,10 @@ def collect_node_info():
     global lbpool
     global dashboard_domain
     global docker_registry_domain
-    global pg_admin_domain
     global use_public_ip_only
     global use_public_ip_for_dashboard
     global use_public_ip_for_docker_registry
     global install_docker_registry
-    global install_pg_admin
     global use_ceph
     global ceph_mon_ips
     global ceph_user
@@ -426,10 +422,6 @@ def collect_node_info():
 
     
     dashboard_domain = input("Enter the dashboard domain to be used [defult : k8sdb.{}]: ".format(base_domain)) or "k8sdb.{}".format(base_domain)
-    install_pg_admin = input("Do you want to install pg admin? (y/n) [defult: n] : ") or "n"
-    install_pg_admin = install_pg_admin == "y"
-    if install_pg_admin:
-        pg_admin_domain = input("Enter the pg admin domain to be used [defult : pgadmin.{}]: ".format(base_domain)) or "pgadmin.{}".format(base_domain)
 
 
 def print_node_info():
@@ -465,9 +457,6 @@ def print_node_info():
             print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
             print("install_docker_registry: {}".format(install_docker_registry))
             print("docker_registry_domain: {}".format(docker_registry_domain))
-            print("install_pg_admin: {}".format(install_pg_admin))
-            if install_pg_admin:
-                print("pg_admin_domain: {}".format(pg_admin_domain))
             print("base_domain: {}".format(base_domain))
             print("use_private_ip_only: {}".format(use_private_ip_only))
     print("===============================================================================\n\n\n")
@@ -787,26 +776,13 @@ def install_k8s(dependencies=False):
         command = command + " --set harbor.enabled=true"
         command = command + """ --set harbor.ingress.core.hostname="{}" """.format(docker_registry_domain)
         if use_public_ip_for_docker_registry:
-            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=publicIngress"
-            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
+            command = command + """ --set harbor.ingress.core.ingressClassName=publicIngress"""
+            command = command + """ --set harbor.ingress.core.annotations."cert-manager\.io/cluster-issuer"=cluster-issuer-public"""
         else:
-            command = command + " --set harbor.ingress.core.annotations.kubernetes.io/ingress.class=privateIngress"
-            command = command + " --set harbor.ingress.core.annotations.cert-manager.io/cluster-issuer=cluster-issuer-private"
-    if install_pg_admin:
-        command = command + " --set pgadmin4.enabled=true"
-        command = command + """ --set pgadmin4.ingress.hosts[0].host="{}" """.format(pg_admin_domain)
-        email = input("Enter the email to be used for pg admin [defult : admin@{}]: ".format(base_domain)) or "admin@{}".format(base_domain)
-        password = input("Enter the password to be used for pg admin [defult : admin]: ") or "admin"
-        command = command + f""" --set pgadmin4.env.email={email}" """
-        command = command + f""" --set pgadmin4.env.password={password}" """
-        if use_public_ip_for_dashboard:
-            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=publicIngress"
-            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-public"
-        else:
-            command = command + " --set pgadmin4.ingress.annotations.kubernetes.io/ingress.class=privateIngress"
-            command = command + " --set pgadmin4.ingress.annotations.cert-manager.io/cluster-issuer=cluster-issuer-private"
+            command = command + """ --set harbor.ingress.core.ingressClassName=privateIngress"""
+            command = command + """ --set harbor.ingress.core.annotations."cert-manager\.io/cluster-issuer"=cluster-issuer-private"""
 
-    
+   
     
     if use_public_ip_for_dashboard:
         command = command + " --set kubernetes-dashboard.app.ingress.ingressClassName=publicIngress --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public"
@@ -821,10 +797,6 @@ def install_k8s(dependencies=False):
     if install_docker_registry:
         print(f"""
         2. {docker_registry_domain} : {use_public_ip_for_docker_registry and loadbalancer_ip1 or loadbalancer_ip2}
-        """)
-    if install_pg_admin:
-        print(f"""
-        3. {pg_admin_domain} : {use_public_ip_for_dashboard and loadbalancer_ip1 or loadbalancer_ip2}
         """)
     print(f"""\n
 
@@ -852,12 +824,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
     if install_docker_registry:
         print(f"""
         docker registry url : https://{docker_registry_domain}/""")
-    if install_pg_admin:
-        print(f"""
-        pg admin url : https://{pg_admin_domain}/""")
-        print(f""" use this credentials to login to pg admin4
-        email : {email}
-        password : {password}""")
+
 
           
 
