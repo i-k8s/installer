@@ -1,57 +1,61 @@
 # Kubernetes Deployments
-This will install kubernets using a single command
-This repo keep all helem charts for kubernetes deployments to start and run the kubernetes cluster with dashboard and ingress controller
+
+This repository houses all Helm charts necessary for Kubernetes deployments, facilitating the setup and management of a Kubernetes cluster with included dashboard and ingress controller using a single command.
 
 ## Prerequisites
 
-python3 and pip3 is required to run the script
+Ensure that `python3` and `pip3` are available to run the script:
 
 ```bash
-sudo apt install python3
-sudo apt install python3-pip
-
+sudo apt update
+sudo apt install python3 python3-pip
 ```
-
-
-
-there will be no existing kubernetes cluster in the server
 
 ## Installation
 
-Expecting git is alredy availble
-
-otherwise isnatll git
+If `git` isn't already available, install it:
 
 ```bash
 sudo apt install git
 ```
 
+Clone the repository and execute the installation script:
+
 ```bash
 git clone https://github.com/i-k8s/installer.git
 cd installer
 sudo chmod +x install.py
-
 sudo ./install.py
 ```
 
 ### Generate SSL Certificate
 
-1. Generate a CA certificate private key.
+1. Navigate to the directory where you want to store your certificates, e.g., `/home/cert`.
 
-    ```sh
-    cd /home/kla/cert
-    openssl genrsa -out tls.key 4096
-    ```
+   ```sh
+   cd /home/cert
+   ```
 
-2. Generate the CA certificate.
+2. Generate a CA certificate private key:
 
-   also possible to use existing certificate, *it will expire in 10 years
-    ```sh
+   ```sh
+   openssl genrsa -out tls.key 4096
+   ```
+
+3. Generate the CA certificate. If you have an existing certificate, you can use it, but ensure it's valid. Here's how to generate one that's valid for 10 years:
+
+   ```sh
    openssl req -x509 -new -nodes -sha512 -days 3650 \
    -subj "/C=IN/ST=Kerala/L=Kerala/O=OpenSSL/OU=ADM/emailAddress=devops@openssl.in/CN=*.openssl.in" \
    -key tls.key \
    -out tls.crt
-    ```
+   ```
+
+   Adjust the `-subj` flag to match your organization's details.
+
+---
+
+I've made some improvements in the formatting, corrected typos, and added clearer instructions. Is there anything specific you'd like to add or modify further?
 
 ## Helpful Commands
 
@@ -67,8 +71,6 @@ helm dependency update
 ```bash
 helm template ./k8s-dependencies
 helm template ./k8s
-helm template ./service
-helm template ./web-ext
 ```
 template the helm charts to see the output with namespace into output-dir
 
@@ -100,7 +102,7 @@ helm upgrade -i k8s ./k8s -n k8s --create-namespace
 ```
 
 ```bash
-helm uninstall web-ext  -n inhouse
+helm uninstall k8s-dependencies  -n ik8s
 helm uninstall k8s  -n k8s
 ```
 
@@ -140,7 +142,7 @@ kubectl create secret generic  generic-secret \
 kubectl create secret tls tls-secret \
   --cert=certificate.crt \
   --key=private.key \
-  --namespace inhouse
+  --namespace ik8s
 ```
 
 
