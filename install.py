@@ -712,24 +712,24 @@ def deploy_calico():
     # wait till pods are deployed in namespace tigera-operator and calico-system and calico-apiserver
     # check atlease one pod in each namespace
     
-    output, error = execute_command("kubectl get pods -n tigera-operator" , False, retries=1)
+    output, error = execute_command("kubectl get pods -n tigera-operator" , False, max_retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n tigera-operator", False, retries=1)
+        output, error = execute_command("kubectl get pods -n tigera-operator", False, max_retries=1)
         time.sleep(5)
-    output, error = execute_command("kubectl get pods -n calico-system", False, retries=1)
+    output, error = execute_command("kubectl get pods -n calico-system", False, max_retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n calico-system", False, retries=1)
+        output, error = execute_command("kubectl get pods -n calico-system", False, max_retries=1)
         time.sleep(5)
-    output, error = execute_command("kubectl get pods -n calico-apiserver", False, retries=1)
+    output, error = execute_command("kubectl get pods -n calico-apiserver", False, max_retries=1)
     while output == "":
-        output, error = execute_command("kubectl get pods -n calico-apiserver", False, retries=1)
+        output, error = execute_command("kubectl get pods -n calico-apiserver", False, max_retries=1)
         time.sleep(5)
     ## sleep for 10 seconds
     time.sleep(10)
     # wait until calico is deployed
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False, retries=5)
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False, retries=5)
-    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system", False, retries=5)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n tigera-operator", False, max_retries=5)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-apiserver", False, max_retries=5)
+    execute_command("kubectl wait --for=condition=ready --timeout=300s pod --all -n calico-system", False, max_retries=5)
 
 
 
