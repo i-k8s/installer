@@ -150,7 +150,8 @@ def execute_command(command, exit_on_error=True,timeout_seconds=300, max_retries
             print("\n\n\n\n")
             process.kill()
             retries += 1
-
+        if max_retries > 3:
+            time.sleep(retries * 10)
         time.sleep(1)  # Add a small delay before retrying
     print(f"Command \n\n'{command}' \n\nfailed after {max_retries} retries.")
     if exit_on_error:
@@ -596,12 +597,14 @@ def install_keepalived_haproxy():
         format_file("keepalived.conf", [("_INTERFACE_", interface),("_VIP_",master_ip)], "/etc/keepalived/keepalived.conf")
 
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
-        execute_command("sudo systemctl status keepalived", False, max_retries=1)
+        time.sleep(30)
+        execute_command("sudo systemctl status keepalived", max_retries=10)
         configuratin = generate_haproxy_config(master_count)
         format_file("haproxy.cfg", [("_SERVER_", configuratin)], "/etc/haproxy/haproxy.cfg")
         execute_command(
             "systemctl enable haproxy && systemctl restart haproxy", False, max_retries=1)
-        execute_command("sudo systemctl status haproxy", False, max_retries=1)
+        time.sleep(30)
+        execute_command("sudo systemctl status haproxy", max_retries=10)
 
 # Function to create Kubernetes cluster using kubeadm
 
