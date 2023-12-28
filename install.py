@@ -743,7 +743,7 @@ def install_k8s(dependencies=False):
     print("lbpool : ",lbpool)
     print("\n"*10)
     if dependencies:
-        command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={{{lbpool}}}" """
+        command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={{ "{lbpool}" }} """
         if docker_registry:
             command = command + """ --set imageRegistry="{}" """.format(docker_registry)
 
