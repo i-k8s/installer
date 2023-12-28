@@ -479,13 +479,17 @@ def update_hosts_file_windows():
 def update_hosts_file():
     # Add entries to /etc/hosts based on collected node information
     # Add entries for master nodes
-    # Add entries for worker nodes
     # Add entries for load balancer
     # Add entries for registry
     # Add entries for VIP as master.in
     if master_ip and ha_proxy_installed:
         command = "echo \"{} master.in\" >> /etc/hosts".format(master_ip)
         execute_command(command)
+    if ha_proxy_installed and is_master:
+        for i in range(len(master_node_ips)):
+            command = "echo \"{} master{} master{}.in\" >> /etc/hosts".format(
+                master_node_ips[i], i+1, i+1)
+            execute_command(command)
 
 
 
