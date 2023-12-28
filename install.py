@@ -658,10 +658,12 @@ def create_kubernetes_cluster():
         else:
             join_command = "sudo kubeadm join master.in:8443 --token {} --discovery-token-ca-cert-hash {} --control-plane --certificate-key {}".format(join_token, join_ca, join_ca_key)
             output, error = execute_command(join_command)
+            exit(0)
     else:
         control_plan = ha_proxy_installed and "master.in:8443" or master_ip+":6443"
         join_command = f"sudo kubeadm join {control_plan} --token {join_token} --discovery-token-ca-cert-hash {join_ca}"
         output, error = execute_command(join_command)
+        exit(0)
 
 
 # Function to install Helm
