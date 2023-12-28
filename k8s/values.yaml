@@ -156,15 +156,17 @@ ceph-csi-rbd:
     # specified in the storage class
     userID: <plaintext ID>
     userKey: <Ceph auth key corresponding to userID above>
-nfs-server-provisioner:
-  enabled: true
+nfs:
+  enabled: false
+  nfs:
+    server:
+    path: /nfs-storage
   storageClass:
     create: true
+    name: nfs
     defaultClass: true
-    parameters:
-      server: nfs-server.example.com
-      path: /share
-      readOnly: "false"
+    accessModes: ReadWriteMany
+
 harbor:
   enabled: false
   core:

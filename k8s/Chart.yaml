@@ -51,9 +51,6 @@ dependencies:
   - name: ceph-csi-rbd
     condition: ceph-csi-rbd.enabled
     version: "1.0.0"
-  - name: nfs-server-provisioner
-    condition: nfs-server-provisioner.enabled
-    version: "1.8.0"
   - name: harbor
     condition: harbor.enabled
     version: "19.2.3"

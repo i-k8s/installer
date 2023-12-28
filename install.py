@@ -753,8 +753,8 @@ def install_k8s(dependencies=False):
     execute_command("kubectl delete StorageClass nfs -n k8s", False,timeout_seconds=None)
 
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
---set nfs-server-provisioner.storageClass.parameters.server="{}" \
---set nfs-server-provisioner.storageClass.parameters.path="{}" \
+--set nfs.nfs.server="{}" \
+--set nfs.nfs.path="{}" \
 --set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
     if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
