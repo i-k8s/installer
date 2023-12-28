@@ -662,12 +662,6 @@ def create_kubernetes_cluster():
         control_plan = ha_proxy_installed and "master.in:8443" or master_ip+":6443"
         join_command = f"sudo kubeadm join {control_plan} --token {join_token} --discovery-token-ca-cert-hash {join_ca}"
         output, error = execute_command(join_command)
-    # Configure kubectl
-    # delete old config
-    execute_command("rm -rf $HOME/.kube", False)
-    execute_command("mkdir -p $HOME/.kube")
-    execute_command("sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config")
-    execute_command("sudo chown $(id -u):$(id -g) $HOME/.kube/config")
 
 
 # Function to install Helm
