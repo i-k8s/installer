@@ -35,7 +35,7 @@ kong:
   kong:
     extraEnvVars:
       - name: KONG_NGINX_WORKER_PROCESSES
-        value: "1"
+        value: "10"
       - name: KONG_PORT_MAPS
         value: "80:8000, 443:8443"
       - name: KONG_NGINX_PROXY_PROXY_BUFFER_SIZE
@@ -72,7 +72,7 @@ kong-internal:
   kong:
     extraEnvVars:
       - name: KONG_NGINX_WORKER_PROCESSES
-        value: "1"
+        value: "5"
       - name: KONG_PORT_MAPS
         value: "80:8000, 443:8443"
       - name: KONG_NGINX_PROXY_PROXY_BUFFER_SIZE

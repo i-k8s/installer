@@ -54,3 +54,6 @@ dependencies:
   - name: harbor
     condition: harbor.enabled
     version: "19.2.3"
+  - name: nfs
+    condition: nfs.enabled
+    version: "4.0.18"

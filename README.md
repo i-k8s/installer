@@ -159,4 +159,4 @@ kubectl get secret kubernetes-dashboard-certs -o=jsonpath='{.data.ca.crt}' -n k8
 
 ```
 
-helm upgrade -i k8s ./k8s -n k8s --create-namespace --set nfs-server-provisioner.storageClass.parameters.server="192.168.175.183" --set nfs-server-provisioner.storageClass.parameters.path="/mnt/nfs_share" --set kubernetes-dashboard.app.ingress.hosts[0]="db.k8s1.ults.build"  --set kong-internal.enabled=false --set kong.enabled=true --set kong-internal.service.loadBalancerIP=192.168.175.126 --set kong.service.loadBalancerIP=192.168.175.125 --set kubernetes-dashboard.app.ingress.ingressClassName=pubing --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public
+helm upgrade -i k8s ./k8s -n k8s --create-namespace --set nfs.nfs.server="192.168.175.183" --set nfs.nfs.path="/mnt/nfs_share" --set kubernetes-dashboard.app.ingress.hosts[0]="db.k8s1.ults.build"  --set kong-internal.enabled=false --set kong.enabled=true --set kong-internal.service.loadBalancerIP=192.168.175.126 --set kong.service.loadBalancerIP=192.168.175.125 --set kubernetes-dashboard.app.ingress.ingressClassName=pubing --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public
