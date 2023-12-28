@@ -9,23 +9,21 @@ import os
 import sys
 
 master_count = 0
-has_internet = False
 docker_registry = None
-master_ip = None
+master_ip = "127.0.0.1"
 master_node_ips = []
-lbpool = ""
+lbpool = "127.0.0.100/30"
 join_token = ""
 join_ca = ""
 join_ca_key = ""
 interface = ""
-ip = ""
+ip = "127.0.0.1"
 is_master = False
 is_first_master = False
 ha_proxy_installed = False
-docker_registry_with_slash = ""
 single_node = False
-docker_registry_domain = ""
-dashboard_domain = ""
+docker_registry_domain = "dr.ik8s.in"
+dashboard_domain = "db.ik8s.in"
 use_ceph = False
 ceph_mon_ips = []
 ceph_user = ""
@@ -37,7 +35,6 @@ use_private_ip_only = False
 use_public_ip_for_dashboard = False
 install_docker_registry = False
 use_public_ip_for_docker_registry = False
-base_domain = "ik8s.amprajin.in"
 is_windows = platform.system() == "Windows"
 CERT_FILE="tls.crt"
 KEY_FILE = "tls.key"
@@ -48,7 +45,13 @@ node_join_command_info = ""
 
 
 def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    try:
+        import importlib
+        importlib.import_module(package)
+        print(f"{package} is already installed.")
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"{package} has been installed.")
 
 def format_file(src, repalces =[],dest=None):
     with open(src, 'r') as file:
@@ -165,6 +168,7 @@ def get_lan_interface_name():
     """Returns the name of the LAN interface on Ubuntu."""
     global all_interfaces
     global interface
+    install("psutil")
     import psutil
     
     # Get a list of all the network interfaces
@@ -184,6 +188,7 @@ def get_lan_interface_ip():
     
     """Returns the IP address of the LAN interface on Ubuntu."""
     global interface
+    install("psutil")
     import psutil
 
 
@@ -227,28 +232,11 @@ def collect_node_info():
     global is_master
     global is_first_master
     global ha_proxy_installed
-    global docker_registry_with_slash
     global single_node
-    global has_internet
     global docker_registry
     global master_ip
     global master_node_ips
-    global lbpool
-    global dashboard_domain
-    global docker_registry_domain
-    global use_public_ip_only
-    global use_public_ip_for_dashboard
-    global use_public_ip_for_docker_registry
-    global install_docker_registry
-    global use_ceph
-    global ceph_mon_ips
-    global ceph_user
-    global ceph_key
-    global nfs_server
-    global nfs_path
     global all_interfaces
-    global base_domain
-    global use_private_ip_only
     global is_windows
     global join_ca
     global join_token
@@ -256,15 +244,11 @@ def collect_node_info():
 
 
     global interface
-    print("\n"*100)
-    print("========================= ik8s Kubernets Cluster setup =========================\n\n")
-    print("\n\nWelcome to ik8s Kubernetes Cluster setup. Please provide the following information to setup the cluster:\n\n")
-    print("\n\n--------------------------------------------------------------------------------\n\n")
-    while master_ip == "" or master_ip == None:
-        master_ip = input("Control-plane IP or Virtual IP \n incase of loadbalanced masternoads (default:127.0.0.1)): ") or "127.0.0.1"
-        if not validate_ipv4(master_ip):
+
+    master_ip = input("Control-plane IP or Virtual IP \n incase of loadbalanced masternoads (default:127.0.0.1)): ") or master_ip
+    while not validate_ipv4(master_ip):
             print("\nInvalid ip please enter correct IP :")
-            master_ip = ""
+            master_ip = input()
     
     is_master = input("\nIs it a master node (y/n) [default: n] ? :").strip() or "n"
     is_master = is_master == "y"
@@ -313,7 +297,6 @@ def collect_node_info():
         
         
     if ha_proxy_installed:
-    
         while interface == "":
             interface = get_lan_interface_name()
             print("""LAN interface is " {} " is this correct (y/n) [default: y] ?:""".format(interface))
@@ -347,48 +330,54 @@ def collect_node_info():
             else:
                 print("Invalid ip address")
 
-
-
-    
     if not is_first_master:
         return
 
-    base_domain = input("Enter the base domain to be used [defult : {}] : ".format(base_domain)) or base_domain
-    while True:
-        has_internet = input(
-            "Does the cluster have permenant internet access? (y/n) [defult: y] : ") or "y"
-        if has_internet == "y" or has_internet == "n":
-            break
-        print("Invalid input try again !")
-    has_internet = has_internet == "y"
+    docker_registry = input("Enter the docker registry to be used: to bootstrap the cluster without internet access (keep balnk if not required) :")
+    if docker_registry == "":
+        docker_registry = None
+
+def collect_cluster_info():
+    # Collect node information here based on the provided data
+    global ha_proxy_installed
+    global lbpool
+    global dashboard_domain
+    global docker_registry_domain
+    global use_public_ip_only
+    global use_public_ip_for_dashboard
+    global use_public_ip_for_docker_registry
+    global install_docker_registry
+    global use_ceph
+    global ceph_mon_ips
+    global ceph_user
+    global ceph_key
+    global nfs_server
+    global nfs_path
+    global use_private_ip_only
+    global is_windows
+    global is_first_master
+    global is_master
+
+    is_master = True
+    is_first_master = True
+    print("\n"*10)
+    print("========================= ik8s Kubernets Cluster setup =========================\n\n")
+    print("\n\nPlease provide the following information to instilize kubernets dependencies and dashbords:\n\n")
+    print("\n\n--------------------------------------------------------------------------------\n\n")
     install_docker_registry = input("Do you want to install harbor docker registry? (y/n) [defult: n] : ") or "n"
     install_docker_registry = install_docker_registry == "y"
     if install_docker_registry:
-        docker_registry_domain = input("Enter the docker registry domain to be used [defult : harbor.{}]: ".format(base_domain)) or "harbor.{}".format(base_domain)
-        docker_registry = docker_registry_domain + "/library/"
-    if not has_internet:
+        docker_registry_domain = input("Enter the docker registry domain to be used [defult : {}]: ".format(docker_registry_domain)) or docker_registry_domain
 
-        while docker_registry == "" or docker_registry == None:
-            docker_registry = input("Enter the docker registry to be used: ")
-            docker_registry = docker_registry.strip().replace("https://", "").replace("http://", "")
-            # check if docker registry is valid url
-        
-        
-        
-        docker_registry_with_slash = docker_registry.endswith(
-            "/") and docker_registry or docker_registry + "/"
-
-    if is_windows:
-        poolstart = "127.0.0.100"
-    else:
+    if not is_windows:
         poolstart = ip.split(".")
         poolstart[3] = str(100)
         poolstart = ".".join(poolstart)
-    while lbpool=="":
-        lbpool = input(f"Enter the load balancer pool to be used [defult : {poolstart}/30] : ") or f"{poolstart}/30"
-        if not validate_iprange(lbpool):
-            lbpool = ""
-            print ("invalid ip range use format  192.168.10.0/24 or 192.168.9.1-192.168.9.5")
+        lbpool = f"{poolstart}/30"
+    lbpool = input(f"Enter the load balancer pool to be used [defult : {lbpool}] : ") or lbpool
+    while not validate_iprange(lbpool):
+        print ("invalid ip range use format  192.168.10.0/24 or 192.168.9.1-192.168.9.5")
+        lbpool = input(f"Enter valid ip pool ")
     use_ceph = input("Do you want to use Ceph for storage? (y/n) [defult: n] : ") or "n"
     use_ceph = use_ceph == "y"
     if use_ceph:
@@ -426,7 +415,7 @@ def collect_node_info():
 
 
     
-    dashboard_domain = input("Enter the dashboard domain to be used [defult : k8sdb.{}]: ".format(base_domain)) or "k8sdb.{}".format(base_domain)
+    dashboard_domain = input("Enter the dashboard domain to be used [defult : {}]: ".format(dashboard_domain)) or dashboard_domain
 
 
 def print_node_info():
@@ -444,8 +433,6 @@ def print_node_info():
             print("ip: {}".format(ip))
             print("master_ip for haproxy (master loadbalancing VIP): {}".format(master_ip))
         if is_first_master:
-            print("docker_registry_with_slash: {}".format(docker_registry_with_slash))
-            print("has_internet: {}".format(has_internet))
             print("docker_registry: {}".format(docker_registry))
             print("lbpool: {}".format(lbpool))
             print("dashboard_domain: {}".format(dashboard_domain))
@@ -462,11 +449,18 @@ def print_node_info():
             print("use_public_ip_for_docker_registry: {}".format(use_public_ip_for_docker_registry))
             print("install_docker_registry: {}".format(install_docker_registry))
             print("docker_registry_domain: {}".format(docker_registry_domain))
-            print("base_domain: {}".format(base_domain))
             print("use_private_ip_only: {}".format(use_private_ip_only))
     print("===============================================================================\n\n\n")
     print("is_windows: {}".format(is_windows))
-
+    proceed = False
+    while not proceed:
+        i = input(
+            "\n\n Are you sure you want to proceed with the installation? (y/n/c) [defult: y]") or "y"
+        if i == "y":
+            proceed = True
+        elif i == "c":
+            print("Exiting...")
+            exit(1)
 
 
 # Function to add entries to /etc/hosts
@@ -623,21 +617,21 @@ def create_kubernetes_cluster():
     error = None
     # reset existing cluster
     execute_command("sudo kubeadm reset -f",False, max_retries=1)
-    if (has_internet):
+    if docker_registry:
+        output, error = execute_command(
+            "sudo kubeadm config images pull --image-repository {} --kubernetes-version=v1.25.8".format(docker_registry))
+    else:
         output, error = execute_command(
             "sudo kubeadm config images pull --kubernetes-version=v1.25.8")
-    else:
 
-        output, error = execute_command(
-            "sudo kubeadm config images pull --image-repository {}registry.k8s.io --kubernetes-version=v1.25.8".format(docker_registry_with_slash))
     # Initialize the cluster using kubeadm
     if is_master:
         if is_first_master:
             command = "sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version=v1.25.8 --upload-certs "
-            if not has_internet:
+            if docker_registry:
                 command = command + \
-                    " --image-repository {}registry.k8s.io".format(
-                        docker_registry_with_slash)
+                    " --image-repository {}".format(
+                        docker_registry)
             if ha_proxy_installed:
                 command = command + " --control-plane-endpoint=\"master.in:8443\""
             output, error = execute_command(command, False,max_retries=1)
@@ -745,13 +739,13 @@ def check_status():
 def install_k8s(dependencies=False):
     # delete old namespaces
     ## check if k8s namespace exists
-    print("/n"*10)
+    print("\n"*10)
     print("lbpool : ",lbpool)
-    print("/n"*10)
+    print("\n"*10)
     if dependencies:
-        command = "helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={" + lbpool + "}"
+        command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool={{{lbpool}}}" """
         if docker_registry:
-            command = command + " --set imageRegistry={}".format(docker_registry)
+            command = command + """ --set imageRegistry="{}" """.format(docker_registry)
 
         output, error = execute_command(command,timeout_seconds=None)
 
@@ -844,41 +838,27 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # Main function to orchestrate the setup process
 def main():
-    install("psutil")
-    proceed = False
-    while not proceed:
-        collect_node_info()
-        print_node_info()
-        i = input(
-            "\n\n Are you sure you want to proceed with the installation? (y/n/c) [defult: y]") or "y"
-        if i == "y":
-            proceed = True
-        elif i == "c":
-            print("Exiting...")
-            exit(1)
-    print("Starting installation...")
-    print("Installing master node...")
+    
+    print("\n"*100)
+    print("========================= ik8s Kubernets Cluster setup =========================\n\n")
+    print("\n\nWelcome to ik8s Kubernetes Cluster setup. Please enetr proper values to proceed:\n\n")
+    print("\n\n--------------------------------------------------------------------------------\n\n")
     print("Choose the options to be installed")
+    print("_____________________________________")
     print("1. From scratch")
     print("2. Resetting existing cluster")
-    if is_first_master:
-        print("3. upgrade kubernets dependencies and metllb and cert-manager")
-        print("4. upgrade kubernets dependencies only")
-
+    print("3. upgrade kubernets dependencies and metllb and cert-manager")
+    print("4. upgrade kubernets dependencies only")
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
-    if choice == 1:
-        print("Starting installation from scratch...")
-    elif choice == 2:
-        print("Starting installation from existing cluster... resetting")
-    elif choice == 3:
-        print("Starting installation from existing cluster... upgrading dependencies, metllb and cert-manager")
-    elif choice == 4:
-        print("Starting installation from existing cluster... upgrading dependencies only")
-    else:
+    
+    if choice <1 :
         print("Invalid choice")
         exit(1)
     if choice == 1:
+        print("Starting installation from scratch...")
+        collect_node_info()
+        print_node_info()
         if is_windows:
             update_hosts_file_windows()
             install_docker_windows()
@@ -889,7 +869,11 @@ def main():
             install_containerd()
             install_kubernetes()
             install_keepalived_haproxy()
-    if choice <= 2:
+    elif choice <= 2:
+        print("Starting installation from existing cluster... resetting")
+        if choice == 2:
+            collect_node_info()
+            print_node_info()
         if is_windows:
             install_helm_windows()
             create_kubernetes_cluster_windows()
@@ -897,9 +881,19 @@ def main():
             install_helm()
             create_kubernetes_cluster()
             deploy_calico()
-    check_status()
-    if is_first_master:
-        install_k8s(choice <= 3)
+        if is_first_master:
+            collect_cluster_info()
+            install_k8s(True)
+    
+    elif choice == 3 or choice == 4:
+        print("Starting installation from existing cluster... upgrading dependencies" + (" and metllb and cert-manager" if choice == 3 else ""))
+        collect_cluster_info()
+        print_node_info()
+        install_k8s(choice == 3)
+    else:
+        print("Invalid choice")
+        exit(1)
+
 
 
 if __name__ == "__main__":
