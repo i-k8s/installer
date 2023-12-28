@@ -273,7 +273,7 @@ def collect_node_info():
         is_first_master = input("Is it the first master node (y/n) [default: y] ? :").strip() or "y"
         is_first_master = is_first_master == "y"
     else:
-        ha_proxy_installed = input("is it have a load balanced contrl-plne with host 'master.in:8443' ? :").strip() or "n"
+        ha_proxy_installed = input("is it have a load balanced contrl-plne with host 'master.in:8443' (y/n)? [defult n] :").strip() or "n"
 
     if not is_master or (is_master and not is_first_master):
         while join_token == "" or join_token == None:
@@ -591,7 +591,7 @@ def install_keepalived_haproxy_windows():
 def install_keepalived_haproxy():
     # Install and configure Keepalived & HAProxy on multiple master nodes if needed
     global ha_proxy_installed
-    if ha_proxy_installed:
+    if ha_proxy_installed and is_master:
         execute_command("sudo apt update", False, max_retries=1)
         execute_command(
             "DEBIAN_FRONTEND=noninteractive sudo apt install -y keepalived haproxy", False, max_retries=1)
@@ -858,11 +858,11 @@ def main():
             print("Exiting...")
             exit(1)
     print("Starting installation...")
+    print("Installing master node...")
+    print("Choose the options to be installed")
+    print("1. From scratch")
+    print("2. Resetting existing cluster")
     if is_first_master:
-        print("Installing master node...")
-        print("Choose the options to be installed")
-        print("1. From scratch")
-        print("2. Resetting existing cluster")
         print("3. upgrade kubernets dependencies and metllb and cert-manager")
         print("4. upgrade kubernets dependencies only")
 
