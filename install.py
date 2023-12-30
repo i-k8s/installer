@@ -25,6 +25,10 @@ single_node = False
 docker_registry_domain = "dr.ik8s.in"
 dashboard_domain = "db.ik8s.in"
 use_ceph = False
+use_nfs = False
+use_hostpath = False
+stoarage_path = ""
+ceph_cluster_id = ""
 ceph_mon_ips = []
 ceph_user = ""
 ceph_key = ""
@@ -311,14 +315,13 @@ def collect_node_info():
                     print("Invalid input")
                     exit(1)
 
-        while ip == "":
-            ip = get_lan_interface_ip()
-            print("LAN interface IP is {} is this correct (y/n) [default: y] ?".format(ip))
-            if (input() or "y") == "n":
-                ip = input("Enter the LAN interface IP: ")
-                if not validate_ipv4(ip):
-                    print("Invalid ip please enter correct IP")
-                    ip = ""
+        ip = get_lan_interface_ip()
+        print("LAN interface IP is {} is this correct (y/n) [default: y] ?".format(ip))
+        if (input() or "y") == "n":
+            ip = input("Enter the LAN interface IP: ")
+            while validate_ipv4(ip):
+                print("Invalid ip please enter correct IP")
+                ip = input()
 
         master_node_ips.append(ip)
         while len(master_node_ips) < master_count:
@@ -351,12 +354,16 @@ def collect_cluster_info():
     global ceph_mon_ips
     global ceph_user
     global ceph_key
+    global ceph_cluster_id
     global nfs_server
     global nfs_path
     global use_private_ip_only
     global is_windows
     global is_first_master
     global is_master
+    global use_nfs
+    global use_hostpath
+    global stoarage_path
 
     is_master = True
     is_first_master = True
@@ -385,14 +392,24 @@ def collect_cluster_info():
             "Enter the Ceph monitor IPs (comma separated): ").split(",")
         ceph_user = input("Enter the Ceph user: ")
         ceph_key = input("Enter the Ceph key: ")
+        ceph_cluster_id = input("Enter the Ceph cluster ID: ")
     else:
-        while nfs_server=="":
-            nfs_server = input(f"Enter the NFS server IP [defult : {ip}] : ") or f"{ip}"
-            if not validate_ipv4(nfs_server):
-                nfs_server ==""
-                print("Invalid ip address for nfs server..")
+        use_nfs = input("Do you want to use NFS for storage? which create nfs storage class (y/n) [defult: n] : ") or "n"
+        use_nfs = use_nfs == "y"
+        if use_nfs:
+            while nfs_server=="":
+                nfs_server = input(f"Enter the NFS server IP [defult : {ip}] : ") or f"{ip}"
+                if not validate_ipv4(nfs_server):
+                    nfs_server ==""
+                    print("Invalid ip address for nfs server..")
 
-        nfs_path = input("Enter the NFS path defult[/]:") or "/"
+            nfs_path = input("Enter the NFS path defult[/]:") or "/"
+        use_hostpath = input("Do you want to use openEBS for storage? which create Storage Class  openebs-hostpath (y/n) [defult: n] : ") or "n"
+        use_hostpath = use_hostpath == "y"
+        if use_hostpath:
+            stoarage_path = input("Enter the hostpath to be used [defult : /var/openebs/local] : ") or "/var/openebs/local"
+
+
 
 
     use_public_ip_only = input("Do you want to use public IP only? (y/n) [defult: y] : ") or "y"
@@ -735,27 +752,46 @@ def check_status():
     print("pods status after waiting")
     execute_command("kubectl get pods --all-namespaces")
 
-
-def install_k8s(dependencies=False):
-    # delete old namespaces
-    ## check if k8s namespace exists
+def install_dependencies():
+    execute_command("kubectl delete StorageClass nfs -n k8s", False,timeout_seconds=None)
     print("\n"*10)
     print("lbpool : ",lbpool)
     print("\n"*10)
-    if dependencies:
-        command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool="{{{lbpool}}}" """
-        if docker_registry:
-            command = command + """ --set imageRegistry="{}" """.format(docker_registry)
+    command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool="{{{lbpool}}}" """
+    if use_ceph:
+        command = command + """ --set ceph-csi-cephfs.enabled=true """
+        command = command + """--set ceph-csi-cephfs.csiConfig[0].monitors="{""" + ",".join(ceph_mon_ips) + """"}" """
+        command = command + """--set ceph-csi-cephfs.csiConfig[0].monitors="{}" """.format(ceph_cluster_id)
+        command = command + """--set ceph-csi-cephfs.csiConfig[0].cephFS.subvolumeGroup="csi" """
+        command = command + """--set ceph-csi-cephfs.csiConfig[0].cephFS.netNamespaceFilePath="{{{{ .kubeletDir }}}}/plugins/ {{{{ .driverName }}}}/net" """
+        command = command + """--set ceph-csi-cephfs.secret.adminID={} --set ceph-csi-cephfs.secret.adminKey={}" """.format(ceph_user, ceph_key)
 
-        output, error = execute_command(command,timeout_seconds=None)
+        command = command + """ --set ceph-csi-rbd.enabled=true """
+        command = command + """--set ceph-csi-rbd.csiConfig[0].monitors="{""" + ",".join(ceph_mon_ips) + """"}" """
+        command = command + """--set ceph-csi-rbd.csiConfig[0].monitors="{}" """.format(ceph_cluster_id)
+        command = command + """--set ceph-csi-rbd.csiConfig[0].rbd.netNamespaceFilePath="{{{{ .kubeletDir }}}}/plugins/ {{{{ .driverName }}}}/net" """
+        command = command + """--set ceph-csi-rbd.secret.userID={} --set ceph-csi-rbd.secret.userKey={}" """.format(ceph_user, ceph_key)
 
-        time.sleep(10)
-    execute_command("kubectl delete StorageClass nfs -n k8s", False,timeout_seconds=None)
+    if use_nfs:
+        command = command + """ --set nfs.enabled=true --set nfs.nfs.server="{}" --set nfs.nfs.path="{}" """.format(nfs_server, nfs_path)
+    if use_hostpath:
+        command = command + """ --set openebs.enabled=true --set openebs.localprovisioner.basePath="{}" """.format(stoarage_path)
 
+    if docker_registry:
+        command = command + """ --set imageRegistry="{}" """.format(docker_registry)
+        if use_nfs:
+            command = command + """ --set nfs.image.repository="{}/registry.k8s.io/sig-storage/nfs-subdir-external-provisioner" """.format(docker_registry)
+        
+
+    output, error = execute_command(command,timeout_seconds=None)
+
+    time.sleep(10)
+
+def install_k8s():
+    # delete old namespaces
+    ## check if k8s namespace exists
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
---set nfs.nfs.server="{}" \
---set nfs.nfs.path="{}" \
---set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain.replace("*", "k8sdb"))
+--set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain)
     if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
         if use_private_ip_only:
@@ -847,8 +883,7 @@ def main():
     print("_____________________________________")
     print("1. From scratch")
     print("2. Resetting existing cluster")
-    print("3. upgrade kubernets dependencies and metllb and cert-manager")
-    print("4. upgrade kubernets dependencies only")
+    print("3. upgrade existsing clcuster")
     choice = input("Enter your choice [default: 1]: ") or "1"
     choice = int(choice)
     
@@ -883,13 +918,15 @@ def main():
             deploy_calico()
         if is_first_master:
             collect_cluster_info()
-            install_k8s(True)
+            install_dependencies()
+            install_k8s()
     
-    elif choice == 3 or choice == 4:
-        print("Starting installation from existing cluster... upgrading dependencies" + (" and metllb and cert-manager" if choice == 3 else ""))
+    elif choice == 3:
+        print("Starting installation from existing cluster..")
         collect_cluster_info()
         print_node_info()
-        install_k8s(choice == 3)
+        install_dependencies()
+        install_k8s()
     else:
         print("Invalid choice")
         exit(1)

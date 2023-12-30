@@ -22,3 +22,64 @@ metallb:
 cert-manager:
   enabled: true
   installCRDs: true
+
+nfs:
+  enabled: false
+  nfs:
+    server:
+    path: /nfs-storage
+  storageClass:
+    create: true
+    name: nfs
+    defaultClass: true
+    accessModes: ReadWriteMany
+openebs:
+  enabled: false
+ceph-csi-cephfs:
+  enabled: false
+  csiConfig:
+    - clusterID: "<cluster-id>"
+      monitors:
+        - "<MONValue1>"
+        - "<MONValue2>"
+      cephFS:
+        subvolumeGroup: "csi"
+        netNamespaceFilePath: "{{ .kubeletDir }}/plugins/{{ .driverName }}/net"
+  storageClass:
+    create: true
+    name: csi-fs-sc
+    fsName: myfs
+  secret:
+    create: true
+    annotations: {}
+    # Key values correspond to a user name and its key, as defined in the
+    # ceph cluster. User ID should have required access to the 'pool'
+    # specified in the storage class
+    adminID: <plaintext ID>
+    adminKey: <Ceph auth key corresponding to ID above>
+ceph-csi-rbd:
+  enabled: false
+  csiConfig:
+    - clusterID: "<cluster-id>"
+      monitors:
+        - "<MONValue1>"
+        - "<MONValue2>"
+      rbd:
+        netNamespaceFilePath: "{{ .kubeletDir }}/plugins/{{ .driverName }}/net"
+      readAffinity:
+        enabled: true
+        crushLocationLabels:
+          - topology.kubernetes.io/region
+          - topology.kubernetes.io/zone
+  storageClass:
+    create: true
+    name: csi-rbd-sc
+  secret:
+    create: true
+    annotations: {}
+    # Key values correspond to a user name and its key, as defined in the
+    # ceph cluster. User ID should have required access to the 'pool'
+    # specified in the storage class
+    userID: <plaintext ID>
+    userKey: <Ceph auth key corresponding to userID above>
+

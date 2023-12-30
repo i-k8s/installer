@@ -45,15 +45,6 @@ dependencies:
     version: 9.9.5
     condition: nginx-ingress-controller-internal.enabled
     repository: "file://./charts/nginx-ingress-controller"
-  - name: ceph-csi-cephfs
-    condition: ceph-csi-cephfs.enabled
-    version: "1.0.0"
-  - name: ceph-csi-rbd
-    condition: ceph-csi-rbd.enabled
-    version: "1.0.0"
   - name: harbor
     condition: harbor.enabled
     version: "19.2.3"
-  - name: nfs
-    condition: nfs.enabled
-    version: "4.0.18"

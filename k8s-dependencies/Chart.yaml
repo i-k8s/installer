@@ -25,9 +25,21 @@ appVersion: "1.16.0"
 dependencies:
   - name: metallb
     alias: metallb
-    version: 4.8.0
+    version: x.x.x
     condition: metallb.enabled
   - name: cert-manager
     alias: cert-manager
-    version: 0.14.0
+    version: x.x.x
     condition: cert-manager.enabled
+  - name: nfs
+    condition: nfs.enabled
+    version: x.x.x
+  - name: openebs
+    condition: openebs.enabled
+    version: x.x.x
+  - name: ceph-csi-cephfs
+    condition: ceph-csi-cephfs.enabled
+    version: x.x.x
+  - name: ceph-csi-rbd
+    condition: ceph-csi-rbd.enabled
+    version: x.x.x
