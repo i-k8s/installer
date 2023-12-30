@@ -904,7 +904,7 @@ def main():
             install_containerd()
             install_kubernetes()
             install_keepalived_haproxy()
-    elif choice <= 2:
+    if choice <= 2:
         print("Starting installation from existing cluster... resetting")
         if choice == 2:
             collect_node_info()
