@@ -791,7 +791,7 @@ def install_k8s():
     # delete old namespaces
     ## check if k8s namespace exists
     command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
---set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(nfs_server, nfs_path, dashboard_domain)
+--set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(dashboard_domain)
     if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
         if use_private_ip_only:
