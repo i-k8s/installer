@@ -1,4 +1,4 @@
-{{- if .Values.apiserver.enabled }}
+{{- if and (.Values.apiserver.enabled) (.Values.legacy.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,11 +31,19 @@ spec:
         openebs.io/component-name: maya-apiserver
         openebs.io/version: {{ .Values.release.version }}
     spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
       serviceAccountName: {{ template "openebs.serviceAccountName" . }}
       containers:
       - name: {{ template "openebs.name" . }}-apiserver
-        image: "{{ .Values.apiserver.image }}:{{ .Values.apiserver.imageTag }}"
+        image: "{{ .Values.image.repository }}{{ .Values.apiserver.image }}:{{ .Values.apiserver.imageTag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- if .Values.apiserver.resources }}
+        resources:
+{{ toYaml .Values.apiserver.resources | trimSuffix "\n" | indent 10 }}
+{{- end }}
         ports:
         - containerPort: {{ .Values.apiserver.ports.internalPort }}
         env:
@@ -67,6 +75,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         # If OPENEBS_IO_CREATE_DEFAULT_STORAGE_CONFIG is false then OpenEBS default
         # storageclass and storagepool will not be created.
         - name: OPENEBS_IO_CREATE_DEFAULT_STORAGE_CONFIG
@@ -105,30 +117,30 @@ spec:
         # is set to true
         - name: OPENEBS_IO_LOCALPV_HOSTPATH_DIR
           value: "{{ .Values.localprovisioner.basePath }}"
-        # OPENEBS_IO_BASE_DIR used to specify base directory to store OpenEBS
-        # related files
+        # OPENEBS_IO_BASE_DIR used by the OpenEBS to store debug information and
+        # so forth that are generated in the course of running OpenEBS containers.
         - name: OPENEBS_IO_BASE_DIR
-          value: "{{ .Values.persistentStoragePath.baseDir }}"
+          value: "{{ .Values.varDirectoryPath.baseDir }}"
         - name: OPENEBS_IO_JIVA_CONTROLLER_IMAGE
-          value: "{{ .Values.jiva.image }}:{{ .Values.jiva.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.jiva.image }}:{{ .Values.jiva.imageTag }}"
         - name: OPENEBS_IO_JIVA_REPLICA_IMAGE
-          value: "{{ .Values.jiva.image }}:{{ .Values.jiva.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.jiva.image }}:{{ .Values.jiva.imageTag }}"
         - name: OPENEBS_IO_JIVA_REPLICA_COUNT
           value: "{{ .Values.jiva.replicas }}"
         - name: OPENEBS_IO_CSTOR_TARGET_IMAGE
-          value: "{{ .Values.cstor.target.image }}:{{ .Values.cstor.target.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.cstor.target.image }}:{{ .Values.cstor.target.imageTag }}"
         - name: OPENEBS_IO_CSTOR_POOL_IMAGE
-          value: "{{ .Values.cstor.pool.image }}:{{ .Values.cstor.pool.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.cstor.pool.image }}:{{ .Values.cstor.pool.imageTag }}"
         - name: OPENEBS_IO_CSTOR_POOL_MGMT_IMAGE
-          value: "{{ .Values.cstor.poolMgmt.image }}:{{ .Values.cstor.poolMgmt.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.cstor.poolMgmt.image }}:{{ .Values.cstor.poolMgmt.imageTag }}"
         - name: OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE
-          value: "{{ .Values.cstor.volumeMgmt.image }}:{{ .Values.cstor.volumeMgmt.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.cstor.volumeMgmt.image }}:{{ .Values.cstor.volumeMgmt.imageTag }}"
         - name: OPENEBS_IO_VOLUME_MONITOR_IMAGE
-          value: "{{ .Values.policies.monitoring.image }}:{{ .Values.policies.monitoring.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.policies.monitoring.image }}:{{ .Values.policies.monitoring.imageTag }}"
         - name: OPENEBS_IO_CSTOR_POOL_EXPORTER_IMAGE
-          value: "{{ .Values.policies.monitoring.image }}:{{ .Values.policies.monitoring.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.policies.monitoring.image }}:{{ .Values.policies.monitoring.imageTag }}"
         - name: OPENEBS_IO_HELPER_IMAGE
-          value: "{{ .Values.helper.image }}:{{ .Values.helper.imageTag }}"
+          value: "{{ .Values.image.repository }}{{ .Values.helper.image }}:{{ .Values.helper.imageTag }}"
         # OPENEBS_IO_ENABLE_ANALYTICS if set to true sends anonymous usage
         # events to Google Analytics
         - name: OPENEBS_IO_ENABLE_ANALYTICS
@@ -139,11 +151,16 @@ spec:
           value: "{{ .Values.analytics.pingInterval }}"
         - name: OPENEBS_IO_INSTALLER_TYPE
           value: "charts-helm"
+        # OPENEBS_IO_INSTALL_CRD environment variable is used to enable/disable CRD installation
+        # from Maya API server. By default the CRDs will be installed
+        - name: OPENEBS_IO_INSTALL_CRD
+          value: "{{ .Values.crd.enableInstall }}"
         livenessProbe:
           exec:
             command:
-            - /usr/local/bin/mayactl
-            - version
+            - /bin/sh
+            - -c
+            - /usr/local/bin/mayactl -m $MY_POD_IP version
           initialDelaySeconds: {{ .Values.apiserver.healthCheck.initialDelaySeconds }}
           periodSeconds: {{ .Values.apiserver.healthCheck.periodSeconds }}
 {{- if .Values.apiserver.nodeSelector }}
