@@ -35,6 +35,17 @@ nfs:
     accessModes: ReadWriteMany
 openebs:
   enabled: false
+  apiserver.enabled: false
+  localprovisioner:
+    enabled: true
+    basePath: /mnt/data_drive
+  provisioner.enabled: false
+  snapshotOperator.enabled: false
+  ndm.enabled: false
+  ndmOperator.enabled: false
+  policies.monitoring.enabled: false
+  analytics.enabled: false
+  webhook.enabled: true
 ceph-csi-cephfs:
   enabled: false
   csiConfig:
