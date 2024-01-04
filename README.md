@@ -158,5 +158,34 @@ kubectl create token helm --duration=720h
 kubectl get secret kubernetes-dashboard-certs -o=jsonpath='{.data.ca.crt}' -n k8s | base64 --decode
 
 ```
+sudo apt-get install -y  kubelet=1.25.8-1.1 kubeadm=1.25.8-1.1 kubectl=1.25.8-1.1
 
-helm upgrade -i k8s ./k8s -n k8s --create-namespace --set nfs.nfs.server="192.168.175.183" --set nfs.nfs.path="/mnt/nfs_share" --set kubernetes-dashboard.app.ingress.hosts[0]="db.k8s1.ults.build"  --set kong-internal.enabled=false --set kong.enabled=true --set kong-internal.service.loadBalancerIP=192.168.175.126 --set kong.service.loadBalancerIP=192.168.175.125 --set kubernetes-dashboard.app.ingress.ingressClassName=pubing --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public
+sudo kubeadm reset -f
+
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version=v1.25.8 --upload-certs --control-plane-endpoint="master.in:8443"
+
+
+rm -r $HOME/.kube
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+helm repo add projectcalico https://docs.tigera.io/calico/charts
+
+helm repo update
+
+helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace
+
+helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool="{192.168.175.125-192.168.175.127}"  --set openebs.enabled=true --set openebs.localprovisioner.basePath="/mnt/data_drive/openebs/local" --set nfs.enabled=true --set nfs.nfs.server="192.168.175.183" --set nfs.nfs.path="/mnt/nfs_share"
+
+helm upgrade -i k8s ./k8s -n k8s --create-namespace  --set kubernetes-dashboard.app.ingress.hosts[0]="db.k8s1.ults.build"  --set kong-internal.enabled=false --set kong.enabled=true --set kong-internal.service.loadBalancerIP=192.168.175.126 --set kong.service.loadBalancerIP=192.168.175.125 --set kubernetes-dashboard.app.ingress.ingressClassName=pubing --set kubernetes-dashboard.app.ingress.issuer=cluster-issuer-public
+
+ctr ns list
+ctr ns rm k8s.io -f
+
+ctr -n k8s.io c list
+
+ctr -n k8s.io i prune --force --all
+
+sudo ctr -n k8s.io containers ls -q | xargs -I{} sudo ctr -n k8s.io container rm {}

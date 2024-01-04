@@ -579,7 +579,7 @@ def install_kubernetes():
     # Install kubeadm, kubelet & kubectl
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-get update", False, max_retries=1)
     execute_command(
-        "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet kubeadm kubectl")
+        "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y  kubelet=1.25.8-1.1 kubeadm=1.25.8-1.1 kubectl=1.25.8-1.1")
     execute_command("DEBIAN_FRONTEND=noninteractive sudo apt-mark hold kubelet kubeadm kubectl")
     # Disable swap
     execute_command("sudo swapoff -a")
@@ -713,7 +713,7 @@ def deploy_calico():
         """helm repo add projectcalico https://docs.tigera.io/calico/charts""")
     execute_command("""helm repo update""", False, max_retries=1)
     execute_command(
-        """helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace""")
+        """helm upgrade -i calico projectcalico/tigera-operator --version v3.25.2 --namespace tigera-operator --create-namespace --wait""")
     # sleep for 30 seconds
     time.sleep(30)
     # wait till pods are deployed in namespace tigera-operator and calico-system and calico-apiserver
@@ -757,7 +757,7 @@ def install_dependencies():
     print("\n"*10)
     print("lbpool : ",lbpool)
     print("\n"*10)
-    command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --create-namespace --set ipPool="{{{lbpool}}}" """
+    command = f"""helm upgrade -i k8s-dependencies ./k8s-dependencies -n k8s --wait --create-namespace --set ipPool="{{{lbpool}}}" """
     if use_ceph:
         command = command + """ --set ceph-csi-cephfs.enabled=true """
         command = command + """--set ceph-csi-cephfs.csiConfig[0].monitors="{""" + ",".join(ceph_mon_ips) + """"}" """
@@ -790,7 +790,7 @@ def install_dependencies():
 def install_k8s():
     # delete old namespaces
     ## check if k8s namespace exists
-    command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace \
+    command = """helm upgrade -i k8s ./k8s -n k8s --create-namespace --wait \
 --set kubernetes-dashboard.app.ingress.hosts[0]="{}" """.format(dashboard_domain)
     if use_public_ip_only or use_private_ip_only:
         command = command + " --set kong-internal.enabled=false --set kong.enabled=true"
