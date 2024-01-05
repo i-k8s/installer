@@ -47,7 +47,8 @@ all_interfaces = []
 node_join_command_info = ""
 # Function to execute shell commands
 
-
+def iptohostname(ip):
+    return ip.replace(".", "-")
 def install(package):
     try:
         import importlib
@@ -219,10 +220,11 @@ def get_lan_interface_ip():
         exit(1)
 
 
-def generate_haproxy_config(num_masters):
+def generate_haproxy_config():
     config = ""
-    for i in range(1, num_masters + 1):
-        config += f"    server master{i} master{i}.in:6443 check fall 3 rise 2\n"
+    for ip in master_node_ips:
+        host = iptohostname(ip)
+        config += f"    server master{host} master{host}.in:6443 check fall 3 rise 2\n"
 
     return config
 # Function to collect node information
@@ -497,9 +499,9 @@ def update_hosts_file():
         command = "echo \"{} master.in\" >> /etc/hosts".format(master_ip)
         execute_command(command)
     if ha_proxy_installed and is_master:
-        for i in range(len(master_node_ips)):
-            command = "echo \"{} master{} master{}.in\" >> /etc/hosts".format(
-                master_node_ips[i], i+1, i+1)
+        for ip in master_node_ips:
+            command = "echo \"{} master{}.in\" >> /etc/hosts".format(
+                ip, iptohostname(ip))
             execute_command(command)
 
 
@@ -614,7 +616,7 @@ def install_keepalived_haproxy():
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
         time.sleep(30)
         execute_command("sudo systemctl status keepalived", max_retries=10)
-        configuratin = generate_haproxy_config(master_count)
+        configuratin = generate_haproxy_config()
         format_file("haproxy.cfg", [("_SERVER_", configuratin)], "/etc/haproxy/haproxy.cfg")
         execute_command(
             "systemctl enable haproxy && systemctl restart haproxy", False, max_retries=1)
