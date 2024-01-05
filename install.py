@@ -496,6 +496,8 @@ def update_hosts_file():
     # Add entries for registry
     # Add entries for VIP as master.in
     if master_ip and ha_proxy_installed:
+        command = "echo \"# added by ik8s\" >> /etc/hosts"
+        execute_command(command)
         command = "echo \"{} master.in\" >> /etc/hosts".format(master_ip)
         execute_command(command)
     if ha_proxy_installed and is_master:
