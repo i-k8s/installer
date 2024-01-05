@@ -911,8 +911,8 @@ def main():
     if choice <= 2:
         if choice == 2:
             print("Starting installation from existing cluster... resetting")
-        collect_node_info()
-        print_node_info()
+            collect_node_info()
+            print_node_info()
         if is_windows:
             install_helm_windows()
             create_kubernetes_cluster_windows()
