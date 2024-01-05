@@ -614,6 +614,8 @@ def install_keepalived_haproxy():
         execute_command("sudo chmod +x /etc/keepalived/check_apiserver.sh")
 
         format_file("keepalived.conf", [("_INTERFACE_", interface),("_VIP_",master_ip)], "/etc/keepalived/keepalived.conf")
+        if is_first_master:
+            format_file("keepalived.conf", [("BACKUP", "MASTER "),("100","200")], "/etc/keepalived/keepalived.conf")
 
         execute_command("systemctl enable --now keepalived", False, max_retries=1)
         time.sleep(30)
